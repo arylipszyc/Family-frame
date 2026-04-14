@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/dev/bmad-workspace/_moishe/**)",
+      "Read(//c/dev/bmad-workspace/_moishe/sessions/**)"
+    ]
+  }
+}
