@@ -6,13 +6,13 @@ Marco digital familiar como regalo de aniversario de 50 años de los padres de A
 **Deadline:** 2026-05-12
 
 ## Current Phase
-**Fase 2 — Solutioning (Arquitectura + UX)**
+**Fase 2 — Solutioning (UX Design)**
 
 ## Active Sprint
-Ninguno — PRD completado, listo para arquitectura y diseño UX.
+Ninguno — Arquitectura completada, listo para UX Design.
 
 ## Last Action
-2026-04-14 — Dispatched a Winston (Architect). Objetivo: architecture.md para Android kiosk app. Artifact esperado: `_bmad-output/planning-artifacts/architecture.md`.
+2026-04-14 — Architecture.md completado. Stack: Vite + React + TS + Capacitor v8 + Zustand + Tailwind. 28 FRs cubiertos, validado. Próximo paso: UX Design (3 pantallas: KioskScreen, WelcomeScreen, AdminScreen).
 
 ## Epics
 _Pendiente — se definen después de arquitectura y UX._
@@ -25,3 +25,4 @@ Ninguno.
 |------|-------|
 | 2026-04-12 | Proyecto creado. Config BMAD instalada. |
 | 2026-04-12 | PRD completado (28 FRs, 13 NFRs, 4 User Journeys). |
+| 2026-04-14 | Architecture.md completado. Stack definido, patrones y estructura documentados. |
