@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>family-frame — Preview de Diseño</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  :root {
+    --cream:    #F5F0E8;
+    --amber:    #C8956C;
+    --sepia:    #8B6F5E;
+    --charcoal: #2C2420;
+    --night:    #1A1210;
+    --overlay:  rgba(28, 18, 12, 0.75);
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #fff;
+    color: #1a1210;
+    padding: 0;
+    margin: 0;
+  }
+
+  /* ── COVER PAGE ── */
+  .cover {
+    width: 100%;
+    min-height: 100vh;
+    background-color: #1A1210 !important;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 80px 60px;
+    page-break-after: always;
+    text-align: center;
+  }
+  .cover-eyebrow {
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.25em;
+    text-transform: uppercase;
+    color: var(--sepia);
+    margin-bottom: 24px;
+  }
+  .cover-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 3.5rem;
+    color: var(--cream);
+    font-weight: 400;
+    margin-bottom: 16px;
+    line-height: 1.2;
+  }
+  .cover-title span { color: var(--amber); }
+  .cover-subtitle {
+    font-size: 1rem;
+    color: var(--sepia);
+    font-weight: 300;
+    margin-bottom: 60px;
+    line-height: 1.7;
+    max-width: 500px;
+  }
+  .cover-divider {
+    width: 48px;
+    height: 1px;
+    background-color: var(--amber);
+    margin: 0 auto 60px;
+  }
+  .cover-meta {
+    font-size: 0.75rem;
+    color: var(--sepia);
+    font-weight: 300;
+    letter-spacing: 0.08em;
+    line-height: 2;
+  }
+
+  /* ── PAGE LAYOUT ── */
+  .page {
+    width: 100%;
+    padding: 60px;
+    page-break-after: always;
+    background: #fff;
+  }
+  .page:last-child { page-break-after: auto; }
+
+  .page-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin-bottom: 40px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e0d8cc;
+  }
+  .page-number {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--amber);
+  }
+  .page-title {
+    font-family: 'Playfair Display', serif;
+    font-size: 1.6rem;
+    color: var(--charcoal);
+    font-weight: 400;
+  }
+  .page-desc {
+    font-size: 0.8rem;
+    color: var(--sepia);
+    font-weight: 300;
+    margin-left: auto;
+  }
+
+  /* ── SECTION LABEL ── */
+  .label {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 8px;
+  }
+  .label-secondary {
+    font-size: 0.65rem;
+    font-weight: 400;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--sepia);
+    margin-bottom: 8px;
+  }
+
+  /* ── SCREEN MOCKUP ── */
+  .screen-wrap {
+    margin-bottom: 32px;
+  }
+  .screen-caption {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+  .screen-caption .tag {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    background-color: var(--amber);
+    color: #fff;
+    padding: 3px 8px;
+    border-radius: 2px;
+  }
+  .screen-caption .tag.selected { background-color: #2C2420; }
+  .screen-caption .tag.alt { background-color: var(--sepia); }
+  .screen-caption h3 {
+    font-family: 'Playfair Display', serif;
+    font-size: 1rem;
+    color: var(--charcoal);
+    font-weight: 400;
+  }
+  .screen-caption p {
+    font-size: 0.75rem;
+    color: var(--sepia);
+    font-weight: 300;
+    margin-left: auto;
+  }
+
+  /* 16:9 screen */
+  .screen {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    position: relative;
+    overflow: hidden;
+    border-radius: 3px;
+  }
+  .screen-sm {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    position: relative;
+    overflow: hidden;
+    border-radius: 3px;
+  }
+
+  .note {
+    font-size: 0.72rem;
+    color: #7a6658;
+    font-weight: 300;
+    line-height: 1.6;
+    margin-top: 10px;
+    padding-left: 12px;
+    border-left: 2px solid #e0d8cc;
+  }
+  .note strong { color: var(--charcoal); font-weight: 500; }
+
+  /* Grid de 2 columnas */
+  .grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 32px;
+  }
+
+  /* ══════════════════════════════════
+     PHOTO BACKGROUNDS — colores sólidos
+     para máxima compatibilidad de impresión
+  ══════════════════════════════════ */
+  .bg-warm    { background-color: #4A3020 !important; }
+  .bg-forest  { background-color: #2E4A38 !important; }
+  .bg-earth   { background-color: #5C4030 !important; }
+  .bg-portrait{ background-color: #3D2818 !important; }
+  .bg-dusk    { background-color: #2E2018 !important; }
+  .bg-night-bg{ background-color: #0D0806 !important; }
+
+  /* Vignette */
+  .vignette::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 35%, rgba(10,5,2,0.55) 100%) !important;
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* ══════════════════════════════════
+     D3 — MURAL (CHOSEN KIOSK)
+  ══════════════════════════════════ */
+  .d3-top-date {
+    position: absolute; top: 5%; right: 5%;
+    z-index: 3;
+    text-align: right;
+  }
+  .d3-top-date span {
+    font-size: clamp(0.55rem, 1.1vw, 0.8rem);
+    color: rgba(245,240,232,0.45);
+    font-weight: 300;
+    letter-spacing: 0.06em;
+  }
+  .d3-bottom-left {
+    position: absolute; bottom: 7%; left: 5%;
+    z-index: 3;
+    max-width: 55%;
+  }
+  .d3-yiddish {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.4rem, 3.2vw, 2.4rem);
+    color: var(--cream);
+    line-height: 1.15;
+    text-shadow: 0 2px 16px rgba(0,0,0,0.8), 0 1px 4px rgba(0,0,0,0.6);
+  }
+  .d3-trans {
+    font-size: clamp(0.55rem, 1vw, 0.75rem);
+    color: rgba(245,240,232,0.6);
+    font-weight: 300;
+    margin-top: 5px;
+    font-style: italic;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.8);
+  }
+  .d3-bottom-right {
+    position: absolute; bottom: 7%; right: 5%;
+    z-index: 3;
+    text-align: right;
+  }
+  .d3-birthday {
+    font-size: clamp(0.75rem, 1.5vw, 1.1rem);
+    color: var(--amber);
+    font-weight: 500;
+    text-shadow: 0 1px 8px rgba(0,0,0,0.8);
+  }
+  .d3-birthday-sub {
+    font-size: clamp(0.55rem, 1vw, 0.75rem);
+    color: rgba(245,240,232,0.55);
+    font-weight: 300;
+    margin-top: 3px;
+    text-shadow: 0 1px 6px rgba(0,0,0,0.8);
+  }
+
+  /* Paper overlay */
+  .paper {
+    position: absolute; inset: 0;
+    background-color: rgba(245,235,210,0.05) !important;
+    z-index: 2;
+    pointer-events: none;
+  }
+
+  /* ══════════════════════════════════
+     W2 — DRAMÁTICO (CHOSEN WELCOME)
+  ══════════════════════════════════ */
+  .w2-gradient {
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(10,5,2,0.1) 0%, rgba(10,5,2,0.0) 35%, rgba(10,5,2,0.88) 100%) !important;
+    z-index: 2;
+  }
+  .w2-content {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: clamp(20px, 4%, 40px) clamp(24px, 5%, 48px) clamp(18px, 3.5%, 32px);
+    z-index: 3;
+  }
+  .w2-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1rem, 2.2vw, 1.7rem);
+    color: var(--cream);
+    font-weight: 400;
+    margin-bottom: 8px;
+  }
+  .w2-message {
+    font-size: clamp(0.6rem, 1.1vw, 0.85rem);
+    color: rgba(245,240,232,0.75);
+    font-weight: 300;
+    line-height: 1.7;
+    max-width: 58%;
+    margin-bottom: 14px;
+  }
+  .w2-prompt {
+    font-size: clamp(0.5rem, 0.9vw, 0.72rem);
+    color: var(--amber);
+    letter-spacing: 0.12em;
+    font-weight: 300;
+    opacity: 0.85;
+  }
+
+  /* ══════════════════════════════════
+     NIGHT MODE
+  ══════════════════════════════════ */
+  .night-filter {
+    position: absolute; inset: 0;
+    background-color: rgba(10,5,2,0.82) !important;
+    z-index: 10;
+  }
+  .night-warm {
+    position: absolute; inset: 0;
+    background-color: rgba(20,10,5,0.12) !important;
+    z-index: 11;
+  }
+
+  /* ══════════════════════════════════
+     ALTERNATIVE MOCKUPS (smaller)
+  ══════════════════════════════════ */
+  /* D1 Clásico */
+  .d1-band {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background-color: rgba(28,18,12,0.78) !important;
+    padding: clamp(8px,1.5%,14px) clamp(12px,2.5%,24px) clamp(10px,1.8%,16px);
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    gap: 16px;
+    align-items: center;
+    z-index: 3;
+  }
+  .d1-yiddish { font-family:'Playfair Display',serif; font-size:clamp(0.75rem,1.6vw,1.1rem); color:var(--cream); }
+  .d1-trans   { font-size:clamp(0.45rem,0.9vw,0.65rem); color:var(--sepia); font-style:italic; margin-top:2px; }
+  .d1-bday    { text-align:center; border-left:1px solid rgba(139,111,94,0.4); padding-left:12px; }
+  .d1-bday-name { font-size:clamp(0.65rem,1.3vw,0.9rem); color:var(--amber); font-weight:500; }
+  .d1-bday-days { font-size:clamp(0.45rem,0.9vw,0.65rem); color:var(--cream); font-weight:300; }
+  .d1-date   { text-align:right; border-left:1px solid rgba(139,111,94,0.4); padding-left:12px; }
+  .d1-date-txt { font-size:clamp(0.55rem,1.1vw,0.78rem); color:rgba(245,240,232,0.65); font-weight:300; white-space:nowrap; }
+
+  /* D2 Cinema */
+  .d2-gradient {
+    position:absolute; bottom:0; left:0; right:0; height:55%;
+    background:linear-gradient(to top, rgba(10,5,2,0.88) 0%, transparent 100%) !important;
+    z-index:2;
+  }
+  .d2-content {
+    position:absolute; bottom:0; left:0; right:0;
+    padding: clamp(8px,1.5%,14px) clamp(12px,2.5%,24px) clamp(10px,2%,18px);
+    display:flex; justify-content:space-between; align-items:flex-end;
+    z-index:3;
+  }
+  .d2-yiddish { font-family:'Playfair Display',serif; font-size:clamp(0.9rem,2vw,1.4rem); color:var(--cream); font-style:italic; max-width:55%; }
+  .d2-right   { text-align:right; }
+  .d2-bday    { font-size:clamp(0.6rem,1.2vw,0.85rem); color:var(--amber); margin-bottom:4px; }
+  .d2-date    { font-size:clamp(0.45rem,0.9vw,0.65rem); color:rgba(245,240,232,0.4); }
+
+  /* D5 Minimalista */
+  .d5-yiddish {
+    position:absolute; bottom:8%; left:5%;
+    font-family:'Playfair Display',serif; font-size:clamp(1.1rem,2.5vw,1.8rem);
+    color:rgba(245,240,232,0.9); font-style:italic;
+    text-shadow:0 2px 20px rgba(0,0,0,0.6);
+    max-width:55%; line-height:1.2;
+    z-index:3;
+  }
+
+  /* ══════════════════════════════════
+     DESIGN PRINCIPLES PAGE
+  ══════════════════════════════════ */
+  .principles {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+  }
+  .principle-card {
+    background-color: #faf7f2 !important;
+    border: 1px solid #e8e0d4;
+    border-radius: 4px;
+    padding: 20px;
+  }
+  .principle-card .num {
+    font-size: 0.65rem;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    color: var(--amber);
+    margin-bottom: 8px;
+  }
+  .principle-card h4 {
+    font-family: 'Playfair Display', serif;
+    font-size: 0.95rem;
+    color: var(--charcoal);
+    font-weight: 400;
+    margin-bottom: 8px;
+  }
+  .principle-card p {
+    font-size: 0.72rem;
+    color: var(--sepia);
+    font-weight: 300;
+    line-height: 1.6;
+  }
+
+  /* ══════════════════════════════════
+     COLOR SWATCHES
+  ══════════════════════════════════ */
+  .swatches {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 32px;
+  }
+  .swatch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .swatch-color {
+    width: 56px;
+    height: 56px;
+    border-radius: 4px;
+    border: 1px solid rgba(0,0,0,0.08);
+  }
+  .swatch-name {
+    font-size: 0.6rem;
+    font-weight: 500;
+    color: var(--charcoal);
+    letter-spacing: 0.05em;
+  }
+  .swatch-hex {
+    font-size: 0.55rem;
+    color: var(--sepia);
+    font-weight: 300;
+  }
+
+  /* ══════════════════════════════════
+     PRINT STYLES
+  ══════════════════════════════════ */
+  @media print {
+    body { margin: 0; }
+    .page, .cover { page-break-after: always; }
+    .no-print { display: none; }
+  }
+
+  /* ══════════════════════════════════
+     PRINT BUTTON (screen only)
+  ══════════════════════════════════ */
+  .print-btn {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background-color: var(--amber);
+    color: #fff;
+    border: none;
+    padding: 12px 24px;
+    font-family: 'Inter', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    border-radius: 2px;
+    cursor: pointer;
+    box-shadow: 0 4px 16px rgba(200,149,108,0.4);
+    z-index: 1000;
+  }
+  .print-btn:hover { background-color: #b07a52; }
+  @media print { .print-btn { display: none; } }
+</style>
+</head>
+<body>
+
+<button class="print-btn no-print" onclick="window.print()">Imprimir / Guardar PDF</button>
+
+<!-- ═══════════════════════
+     PORTADA
+════════════════════════ -->
+<div class="cover">
+  <div class="cover-eyebrow">Preview de diseño · Abril 2026</div>
+  <div class="cover-title">family-<span>frame</span></div>
+  <div class="cover-subtitle">
+    Un marco familiar inteligente para el 50° aniversario de<br>
+    Abel y Liliana — diseñado con amor.
+  </div>
+  <div class="cover-divider"></div>
+  <div class="cover-meta">
+    Este documento muestra las decisiones de diseño<br>
+    tomadas hasta el momento para la pantalla principal<br>
+    y la pantalla de bienvenida del frame.<br><br>
+    Preparado por Ary · Para compartir con los hermanos
+  </div>
+</div>
+
+<!-- ═══════════════════════
+     PÁG 1 — PANTALLA PRINCIPAL (ELEGIDA)
+════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-number">01</span>
+    <h2 class="page-title">Pantalla Principal</h2>
+    <span class="page-desc">Lo que Abel y Liliana verán todos los días</span>
+  </div>
+
+  <div class="screen-wrap">
+    <div class="screen-caption">
+      <span class="tag selected">Dirección elegida</span>
+      <h3>D3 — "Mural"</h3>
+      <p>Texto flotado directo sobre la foto · Sin barras ni paneles de UI</p>
+    </div>
+    <div class="screen bg-warm vignette">
+      <div class="paper"></div>
+      <div class="d3-top-date"><span>Lunes, 14 de abril de 2026</span></div>
+      <div class="d3-bottom-left">
+        <div class="d3-yiddish">אַ גוטן טאָג,<br>אַ ליכטיקן טאָג</div>
+        <div class="d3-trans">Un buen día, un día luminoso</div>
+      </div>
+      <div class="d3-bottom-right">
+        <div class="d3-birthday">Sofía — en 3 días</div>
+        <div class="d3-birthday-sub">cumpleaños</div>
+      </div>
+    </div>
+    <p class="note">
+      <strong>Cómo funciona:</strong> la foto ocupa toda la pantalla. La frase en Yiddish aparece abajo a la izquierda, la fecha arriba a la derecha (muy discreta), y el cumpleaños próximo abajo a la derecha. Las fotos cambian cada 30 segundos con una transición suave. La frase en Yiddish cambia una vez por día.
+    </p>
+  </div>
+
+  <div class="grid-2">
+    <div class="screen-wrap">
+      <div class="screen-caption">
+        <span class="tag alt">Alternativa</span>
+        <h3>D1 — "Cuadro Clásico"</h3>
+      </div>
+      <div class="screen-sm bg-forest">
+        <div class="paper"></div>
+        <div class="d1-band">
+          <div>
+            <div class="d1-yiddish">אַ גוטן טאָג, אַ ליכטיקן טאָג</div>
+            <div class="d1-trans">Un buen día, un día luminoso</div>
+          </div>
+          <div class="d1-bday">
+            <div class="d1-bday-name">Sofía</div>
+            <div class="d1-bday-days">en 3 días</div>
+          </div>
+          <div class="d1-date">
+            <div class="d1-date-txt">Lunes, 14 de abril</div>
+          </div>
+        </div>
+      </div>
+      <p class="note">Barra horizontal siempre visible abajo. Toda la info junta de un vistazo.</p>
+    </div>
+
+    <div class="screen-wrap">
+      <div class="screen-caption">
+        <span class="tag alt">Alternativa</span>
+        <h3>D5 — "Minimalista"</h3>
+      </div>
+      <div class="screen-sm bg-dusk vignette">
+        <div class="paper"></div>
+        <div class="d5-yiddish">אַ גוטן טאָג,<br>אַ ליכטיקן טאָג</div>
+      </div>
+      <p class="note">Solo un elemento a la vez. Máxima limpieza — la foto es todo.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════════
+     PÁG 2 — PANTALLA DE BIENVENIDA (ELEGIDA)
+════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-number">02</span>
+    <h2 class="page-title">Pantalla de Bienvenida</h2>
+    <span class="page-desc">Aparece cada vez que se enciende el frame</span>
+  </div>
+
+  <div class="screen-wrap">
+    <div class="screen-caption">
+      <span class="tag selected">Dirección elegida</span>
+      <h3>W2 — "Dramático"</h3>
+      <p>Foto de los hijos a pantalla completa · Mensaje sobre degradado oscuro</p>
+    </div>
+    <div class="screen bg-portrait vignette">
+      <div class="paper"></div>
+      <div class="w2-gradient"></div>
+      <div class="w2-content">
+        <div class="w2-title">Para Abel y Liliana</div>
+        <div class="w2-message">
+          Con todo nuestro amor, en el día de su 50° aniversario.<br>
+          Esta pantalla es un pedacito de familia, siempre presente.
+        </div>
+        <div class="w2-prompt">· Tocar para ver las fotos ·</div>
+      </div>
+    </div>
+    <p class="note">
+      <strong>Cómo funciona:</strong> cada vez que Abel o Liliana enchufan el frame (o hay un corte de luz), aparece esta pantalla. La foto de los hijos ocupa toda la pantalla. El mensaje personal aparece abajo. Tocan cualquier parte de la pantalla para pasar a las fotos familiares. El texto del mensaje lo escribe Ary desde el panel de administración.
+    </p>
+  </div>
+
+  <div style="margin-top: 32px; padding: 20px; background-color: #faf7f2 !important; border: 1px solid #e8e0d4; border-radius: 4px;">
+    <div class="label-secondary" style="margin-bottom:12px;">Decisión de diseño — por qué aparece en cada encendido</div>
+    <p style="font-size:0.78rem; color:var(--sepia); font-weight:300; line-height:1.7;">
+      Originalmente el mensaje iba a verse una sola vez. Decidimos que aparezca <strong style="color:var(--charcoal);">cada vez que se enciende</strong> el frame — ya sea al enchufarlo por primera vez, después de un corte de luz, o en cualquier reinicio. Cada encendido es una pequeña oportunidad de recordarles que el frame es su regalo de aniversario y que la familia los quiere.
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════════════════
+     PÁG 3 — MODO NOCHE + PALETA
+════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-number">03</span>
+    <h2 class="page-title">Modo Noche & Paleta de Color</h2>
+    <span class="page-desc">La pantalla respira con la casa</span>
+  </div>
+
+  <div class="screen-wrap">
+    <div class="screen-caption">
+      <span class="tag selected">Automático</span>
+      <h3>Modo Noche — 22:00 → 07:00</h3>
+      <p>Brillo reducido al 15% · Transición gradual de 60 segundos</p>
+    </div>
+    <div class="screen bg-earth vignette">
+      <div class="paper"></div>
+      <div class="night-filter"></div>
+      <div class="night-warm"></div>
+      <div class="d3-top-date" style="z-index:12;"><span>Lunes, 14 de abril de 2026</span></div>
+      <div class="d3-bottom-left" style="z-index:12;">
+        <div class="d3-yiddish">אַ גוטן טאָג,<br>אַ ליכטיקן טאָג</div>
+        <div class="d3-trans">Un buen día, un día luminoso</div>
+      </div>
+      <div class="d3-bottom-right" style="z-index:12;">
+        <div class="d3-birthday">Sofía — en 3 días</div>
+        <div class="d3-birthday-sub">cumpleaños</div>
+      </div>
+    </div>
+    <p class="note">
+      <strong>Por qué es importante:</strong> la pantalla está encendida las 24 horas. Sin modo noche, a las 2am el frame iluminaría el cuarto como un faro. El atenuado gradual hace que el frame "descanse" junto con Abel y Liliana — se siente vivo, no mecánico.
+    </p>
+  </div>
+
+  <div style="margin-top:32px;">
+    <div class="label" style="margin-bottom:16px;">Paleta de color</div>
+    <div class="swatches">
+      <div class="swatch">
+        <div class="swatch-color" style="background-color:#F5F0E8 !important;"></div>
+        <div class="swatch-name">Cream</div>
+        <div class="swatch-hex">#F5F0E8</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background-color:#C8956C !important;"></div>
+        <div class="swatch-name">Amber</div>
+        <div class="swatch-hex">#C8956C</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background-color:#8B6F5E !important;"></div>
+        <div class="swatch-name">Sepia</div>
+        <div class="swatch-hex">#8B6F5E</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background-color:#2C2420 !important;"></div>
+        <div class="swatch-name">Charcoal</div>
+        <div class="swatch-hex">#2C2420</div>
+      </div>
+      <div class="swatch">
+        <div class="swatch-color" style="background-color:#1A1210 !important;"></div>
+        <div class="swatch-name">Night</div>
+        <div class="swatch-hex">#1A1210</div>
+      </div>
+    </div>
+    <p class="note">Todos los colores están diseñados para evocar calidez de hogar — ambers, cremas y sepias. Sin azules ni grises fríos.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════
+     PÁG 4 — PRINCIPIOS DE DISEÑO
+════════════════════════ -->
+<div class="page">
+  <div class="page-header">
+    <span class="page-number">04</span>
+    <h2 class="page-title">Principios de Diseño</h2>
+    <span class="page-desc">Las decisiones que guían cada detalle</span>
+  </div>
+
+  <div class="principles">
+    <div class="principle-card">
+      <div class="num">01</div>
+      <h4>La pantalla es un cuadro, no una app</h4>
+      <p>Cada decisión de layout, tipografía y animación se evalúa como si fuera arte de pared. No hay menús, no hay botones, no hay nada que recuerde que están mirando una pantalla.</p>
+    </div>
+    <div class="principle-card">
+      <div class="num">02</div>
+      <h4>Todo sucede sin pedírselo a nadie</h4>
+      <p>Las fotos nuevas aparecen solas. La frase en Yiddish cambia cada día sola. Los cumpleaños se actualizan solos. Si algo requiere que alguien recuerde hacer algo, es un defecto de diseño.</p>
+    </div>
+    <div class="principle-card">
+      <div class="num">03</div>
+      <h4>El contenido habla, la tecnología calla</h4>
+      <p>Errores silenciosos. Sin popups, sin avisos del sistema, sin indicadores técnicos en pantalla. Si algo falla internamente, Abel y Liliana nunca lo saben.</p>
+    </div>
+    <div class="principle-card">
+      <div class="num">04</div>
+      <h4>El tiempo emocional no tiene urgencia</h4>
+      <p>Transiciones lentas y suaves. Sin timeouts forzados. Sin animaciones nerviosas. El frame respeta el ritmo de las personas que lo miran desde el sillón.</p>
+    </div>
+    <div class="principle-card">
+      <div class="num">05</div>
+      <h4>Diseñado para ser mirado, no usado</h4>
+      <p>Abel y Liliana nunca tocan la pantalla (salvo al encender). El único toque intencional es pasar de la bienvenida a las fotos. El frame existe para ser observado, no operado.</p>
+    </div>
+    <div class="principle-card">
+      <div class="num">06</div>
+      <h4>Un desenchufe lo arregla todo</h4>
+      <p>Si algo sale mal, desenchufar y volver a enchufar restaura el frame en menos de 60 segundos. Sin configuraciones, sin wizards, sin llamarle a Ary.</p>
+    </div>
+  </div>
+
+  <div style="margin-top:32px; padding:20px; background-color:#1A1210 !important; border-radius:4px; text-align:center;">
+    <div style="font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--cream); font-style:italic; margin-bottom:8px;">
+      "No es un electrodoméstico — es un miembro de la familia que siempre está presente."
+    </div>
+    <div style="font-size:0.7rem; color:var(--sepia); font-weight:300; letter-spacing:0.1em;">family-frame · PRD, abril 2026</div>
+  </div>
+</div>
+
+</body>
+</html>

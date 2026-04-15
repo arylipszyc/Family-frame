@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>family-frame — Direcciones de Diseño UX</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream:    #F5F0E8;
+    --amber:    #C8956C;
+    --sepia:    #8B6F5E;
+    --charcoal: #2C2420;
+    --night:    #1A1210;
+    --overlay:  rgba(28, 18, 12, 0.72);
+    --paper:    rgba(245, 235, 210, 0.06);
+  }
+
+  body {
+    font-family: 'Inter', sans-serif;
+    background: #111;
+    color: var(--cream);
+    padding: 32px;
+  }
+
+  h1 {
+    font-family: 'Playfair Display', serif;
+    font-size: 2rem;
+    color: var(--amber);
+    margin-bottom: 8px;
+    text-align: center;
+  }
+  .subtitle {
+    text-align: center;
+    color: var(--sepia);
+    font-size: 0.9rem;
+    font-weight: 300;
+    margin-bottom: 48px;
+    letter-spacing: 0.05em;
+  }
+
+  /* ── Section headers ── */
+  .section-label {
+    font-family: 'Inter', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: var(--sepia);
+    margin-bottom: 12px;
+    padding-bottom: 8px;
+    border-bottom: 1px solid rgba(139,111,94,0.3);
+  }
+
+  .direction-group {
+    margin-bottom: 64px;
+  }
+
+  /* ── Frame container ── */
+  .frame-wrapper {
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto 48px;
+  }
+
+  .frame-label {
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--amber);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .frame-label span {
+    color: var(--sepia);
+    font-weight: 300;
+  }
+
+  /* Aspect ratio 16:9 for landscape tablet simulation */
+  .screen {
+    width: 100%;
+    aspect-ratio: 16 / 9;
+    position: relative;
+    overflow: hidden;
+    border-radius: 4px;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.6);
+  }
+
+  /* ── Simulated photo backgrounds ── */
+  .photo-warm {
+    background: linear-gradient(135deg, #7B5E48 0%, #5C3D2E 40%, #3D2416 70%, #4A3020 100%);
+  }
+  .photo-family {
+    background: linear-gradient(160deg, #6B8E6B 0%, #4A6B5A 30%, #2E4A38 60%, #1A2E20 100%);
+  }
+  .photo-outdoor {
+    background: linear-gradient(140deg, #8B7355 0%, #6B5535 30%, #8B6B45 60%, #5C4030 100%);
+  }
+  .photo-portrait {
+    background: linear-gradient(150deg, #7A5C4A 0%, #3D2818 50%, #5C3820 100%);
+  }
+  .photo-interior {
+    background: linear-gradient(130deg, #6B5845 0%, #4A3828 40%, #2E2018 70%, #3D2A18 100%);
+  }
+  .photo-celebration {
+    background: linear-gradient(145deg, #7A6048 0%, #5C4030 35%, #3D2418 65%, #6B4830 100%);
+  }
+
+  /* Paper overlay */
+  .paper-overlay {
+    position: absolute; inset: 0;
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E"),
+      rgba(245, 235, 210, 0.05);
+    pointer-events: none;
+    z-index: 1;
+  }
+  .paper-strong .paper-overlay {
+    background:
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23noise)' opacity='0.07'/%3E%3C/svg%3E"),
+      rgba(245, 235, 210, 0.09);
+  }
+
+  /* ─────────────────────────────────────────
+     DIRECTION 1 — "Cuadro Clásico"
+     InfoBand horizontal completa, Yiddish central
+  ───────────────────────────────────────── */
+  .d1 .info-band {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: var(--overlay);
+    padding: 16px 32px 20px;
+    display: grid;
+    grid-template-columns: 1fr auto auto;
+    align-items: center;
+    gap: 24px;
+    z-index: 2;
+  }
+  .d1 .yiddish-block { }
+  .d1 .yiddish-main {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.4rem, 2.8vw, 2.2rem);
+    color: var(--cream);
+    line-height: 1.2;
+  }
+  .d1 .yiddish-trans {
+    font-size: clamp(0.7rem, 1.2vw, 0.9rem);
+    color: var(--sepia);
+    font-weight: 300;
+    margin-top: 4px;
+    font-style: italic;
+  }
+  .d1 .birthday-block {
+    text-align: center;
+    border-left: 1px solid rgba(139,111,94,0.4);
+    padding-left: 24px;
+  }
+  .d1 .birthday-label {
+    font-size: clamp(0.6rem, 1vw, 0.75rem);
+    color: var(--sepia);
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .d1 .birthday-name {
+    font-size: clamp(0.9rem, 1.8vw, 1.4rem);
+    color: var(--amber);
+    font-weight: 500;
+  }
+  .d1 .birthday-days {
+    font-size: clamp(0.7rem, 1.2vw, 0.95rem);
+    color: var(--cream);
+    font-weight: 300;
+  }
+  .d1 .date-block {
+    text-align: right;
+    border-left: 1px solid rgba(139,111,94,0.4);
+    padding-left: 24px;
+  }
+  .d1 .date-day {
+    font-size: clamp(0.65rem, 1.1vw, 0.85rem);
+    color: var(--sepia);
+    font-weight: 300;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  .d1 .date-full {
+    font-size: clamp(0.85rem, 1.5vw, 1.1rem);
+    color: var(--cream);
+    font-weight: 300;
+    white-space: nowrap;
+  }
+
+  /* ─────────────────────────────────────────
+     DIRECTION 2 — "Cinema"
+     Vignette intensa, Yiddish grande italic, fecha muy pequeña
+  ───────────────────────────────────────── */
+  .d2::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: radial-gradient(ellipse at center, transparent 40%, rgba(10,5,2,0.7) 100%);
+    z-index: 1;
+    pointer-events: none;
+  }
+  .d2 .info-band {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    background: linear-gradient(to top, rgba(10,5,2,0.85) 0%, transparent 100%);
+    padding: 40px 40px 24px;
+    z-index: 2;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+  .d2 .yiddish-block { max-width: 60%; }
+  .d2 .yiddish-main {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.6rem, 3.2vw, 2.6rem);
+    color: var(--cream);
+    font-style: italic;
+    line-height: 1.2;
+  }
+  .d2 .yiddish-trans {
+    font-size: clamp(0.65rem, 1.1vw, 0.85rem);
+    color: rgba(245,240,232,0.55);
+    font-weight: 300;
+    margin-top: 6px;
+    font-style: normal;
+    letter-spacing: 0.05em;
+  }
+  .d2 .right-info { text-align: right; }
+  .d2 .birthday-name {
+    font-size: clamp(0.85rem, 1.6vw, 1.2rem);
+    color: var(--amber);
+    font-weight: 400;
+    margin-bottom: 8px;
+  }
+  .d2 .birthday-days {
+    font-size: clamp(0.65rem, 1.1vw, 0.85rem);
+    color: rgba(245,240,232,0.6);
+    font-weight: 300;
+    margin-bottom: 12px;
+  }
+  .d2 .date-full {
+    font-size: clamp(0.7rem, 1.2vw, 0.9rem);
+    color: rgba(245,240,232,0.4);
+    font-weight: 300;
+  }
+
+  /* ─────────────────────────────────────────
+     DIRECTION 3 — "Mural"
+     Yiddish flotado izquierda directo sobre foto, date arriba derecha
+  ───────────────────────────────────────── */
+  .d3 .top-date {
+    position: absolute; top: 20px; right: 28px;
+    z-index: 2;
+    text-align: right;
+  }
+  .d3 .top-date-text {
+    font-size: clamp(0.7rem, 1.2vw, 0.9rem);
+    color: rgba(245,240,232,0.55);
+    font-weight: 300;
+    letter-spacing: 0.08em;
+  }
+  .d3 .bottom-left {
+    position: absolute; bottom: 24px; left: 32px;
+    z-index: 2;
+    max-width: 55%;
+  }
+  .d3 .yiddish-main {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.8rem, 3.5vw, 2.8rem);
+    color: var(--cream);
+    line-height: 1.15;
+    text-shadow: 0 2px 12px rgba(0,0,0,0.6);
+  }
+  .d3 .yiddish-trans {
+    font-size: clamp(0.65rem, 1.1vw, 0.85rem);
+    color: rgba(245,240,232,0.6);
+    font-weight: 300;
+    margin-top: 6px;
+    font-style: italic;
+  }
+  .d3 .bottom-right {
+    position: absolute; bottom: 24px; right: 32px;
+    z-index: 2;
+    text-align: right;
+  }
+  .d3 .birthday-name {
+    font-size: clamp(0.85rem, 1.5vw, 1.15rem);
+    color: var(--amber);
+    font-weight: 500;
+  }
+  .d3 .birthday-days {
+    font-size: clamp(0.65rem, 1.1vw, 0.85rem);
+    color: rgba(245,240,232,0.55);
+    font-weight: 300;
+    margin-top: 4px;
+  }
+
+  /* ─────────────────────────────────────────
+     DIRECTION 4 — "Split Panel"
+     Foto 70% izquierda, panel derecho con info
+  ───────────────────────────────────────── */
+  .d4 .photo-area {
+    position: absolute; inset: 0 30% 0 0;
+  }
+  .d4 .photo-area .paper-overlay { border-radius: 0; }
+  .d4 .side-panel {
+    position: absolute; top: 0; right: 0; bottom: 0; width: 30%;
+    background: var(--night);
+    border-left: 1px solid rgba(139,111,94,0.2);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 24px 20px;
+    z-index: 2;
+  }
+  .d4 .panel-date {
+    font-size: clamp(0.6rem, 1vw, 0.75rem);
+    color: var(--sepia);
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+  .d4 .panel-date-full {
+    font-size: clamp(0.85rem, 1.5vw, 1.05rem);
+    color: var(--cream);
+    font-weight: 300;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(139,111,94,0.25);
+  }
+  .d4 .panel-yiddish-label {
+    font-size: clamp(0.55rem, 0.9vw, 0.7rem);
+    color: var(--sepia);
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 8px;
+  }
+  .d4 .panel-yiddish {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1rem, 2vw, 1.55rem);
+    color: var(--cream);
+    line-height: 1.3;
+    font-style: italic;
+    margin-bottom: 8px;
+  }
+  .d4 .panel-trans {
+    font-size: clamp(0.6rem, 1vw, 0.75rem);
+    color: var(--sepia);
+    font-weight: 300;
+    font-style: italic;
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid rgba(139,111,94,0.25);
+  }
+  .d4 .panel-birthday-label {
+    font-size: clamp(0.55rem, 0.9vw, 0.7rem);
+    color: var(--sepia);
+    font-weight: 300;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .d4 .panel-birthday-name {
+    font-size: clamp(0.9rem, 1.8vw, 1.35rem);
+    color: var(--amber);
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  .d4 .panel-birthday-days {
+    font-size: clamp(0.65rem, 1.1vw, 0.85rem);
+    color: rgba(245,240,232,0.6);
+    font-weight: 300;
+  }
+
+  /* ─────────────────────────────────────────
+     DIRECTION 5 — "Minimalista"
+     Solo UN elemento a la vez en esquina, nada más
+  ───────────────────────────────────────── */
+  .d5 .minimal-content {
+    position: absolute; bottom: 28px; left: 36px;
+    z-index: 2;
+    max-width: 50%;
+  }
+  .d5 .yiddish-main {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(2rem, 4vw, 3.2rem);
+    color: rgba(245,240,232,0.9);
+    font-style: italic;
+    line-height: 1.15;
+    text-shadow: 0 2px 20px rgba(0,0,0,0.5);
+  }
+  .d5 .yiddish-trans {
+    font-size: clamp(0.7rem, 1.2vw, 0.9rem);
+    color: rgba(245,240,232,0.45);
+    font-weight: 300;
+    margin-top: 8px;
+    font-style: normal;
+  }
+  /* Minimal date dot indicator */
+  .d5 .dots {
+    position: absolute; bottom: 20px; right: 28px;
+    display: flex; gap: 6px; align-items: center;
+    z-index: 2;
+  }
+  .d5 .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+    background: rgba(245,240,232,0.25);
+  }
+  .d5 .dot.active { background: var(--amber); }
+
+  /* ─────────────────────────────────────────
+     DIRECTION 6 — "Borde Cálido" (foto con marco interno)
+     Foto con borde interno cream, info abajo con fondo cream
+  ───────────────────────────────────────── */
+  .d6 { background: var(--charcoal); }
+  .d6 .photo-inset {
+    position: absolute;
+    inset: 14px 14px 90px 14px;
+    overflow: hidden;
+    border-radius: 2px;
+  }
+  .d6 .photo-inset .photo-outdoor {
+    width: 100%; height: 100%;
+  }
+  .d6 .photo-inset .paper-overlay { border-radius: 2px; }
+  .d6 .bottom-bar {
+    position: absolute; bottom: 0; left: 0; right: 0; height: 90px;
+    background: var(--charcoal);
+    display: flex;
+    align-items: center;
+    padding: 0 24px;
+    gap: 0;
+    z-index: 2;
+  }
+  .d6 .yiddish-block { flex: 1; }
+  .d6 .yiddish-main {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1rem, 2vw, 1.5rem);
+    color: var(--cream);
+    font-style: italic;
+  }
+  .d6 .yiddish-trans {
+    font-size: clamp(0.55rem, 0.95vw, 0.75rem);
+    color: var(--sepia);
+    font-weight: 300;
+    margin-top: 3px;
+    font-style: normal;
+  }
+  .d6 .divider {
+    width: 1px; height: 40px;
+    background: rgba(139,111,94,0.35);
+    margin: 0 20px;
+  }
+  .d6 .birthday-block { text-align: center; }
+  .d6 .birthday-name {
+    font-size: clamp(0.8rem, 1.5vw, 1.1rem);
+    color: var(--amber);
+    font-weight: 500;
+  }
+  .d6 .birthday-days {
+    font-size: clamp(0.6rem, 1vw, 0.8rem);
+    color: var(--sepia);
+    font-weight: 300;
+    margin-top: 3px;
+  }
+  .d6 .date-block { text-align: right; }
+  .d6 .date-full {
+    font-size: clamp(0.75rem, 1.3vw, 1rem);
+    color: rgba(245,240,232,0.55);
+    font-weight: 300;
+  }
+
+  /* ─────────────────────────────────────────
+     WELCOME SCREEN directions
+  ───────────────────────────────────────── */
+  .welcome-bg {
+    background: radial-gradient(ellipse at 50% 45%, #3D2818 0%, #1A100A 60%, #0D0806 100%);
+  }
+
+  /* Welcome D1 — Centrado clásico */
+  .wd1 .photo-circle {
+    position: absolute;
+    width: 45%; aspect-ratio: 1;
+    top: 8%; left: 50%; transform: translateX(-50%);
+    border-radius: 50%;
+    overflow: hidden;
+    border: 2px solid rgba(200,149,108,0.3);
+    box-shadow: 0 0 60px rgba(200,149,108,0.15);
+  }
+  .wd1 .photo-circle .photo-portrait { width: 100%; height: 100%; }
+  .wd1 .welcome-text {
+    position: absolute; bottom: 8%; left: 50%; transform: translateX(-50%);
+    text-align: center; width: 70%; z-index: 2;
+  }
+  .wd1 .welcome-msg {
+    font-size: clamp(0.75rem, 1.4vw, 1.05rem);
+    color: var(--cream);
+    font-weight: 300;
+    line-height: 1.7;
+    margin-bottom: 16px;
+    opacity: 0.9;
+  }
+  .wd1 .welcome-prompt {
+    font-size: clamp(0.6rem, 1vw, 0.8rem);
+    color: var(--amber);
+    font-weight: 300;
+    letter-spacing: 0.1em;
+    opacity: 0.7;
+  }
+
+  /* Welcome D2 — Full bleed dramático */
+  .wd2 .photo-fullbleed {
+    position: absolute; inset: 0;
+  }
+  .wd2 .photo-fullbleed .photo-portrait { width: 100%; height: 100%; object-fit: cover; }
+  .wd2::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(to bottom, rgba(10,5,2,0.2) 0%, rgba(10,5,2,0.0) 40%, rgba(10,5,2,0.85) 100%);
+    z-index: 1;
+  }
+  .wd2 .welcome-overlay {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    padding: 40px 48px 32px;
+    z-index: 2;
+  }
+  .wd2 .welcome-title {
+    font-family: 'Playfair Display', serif;
+    font-size: clamp(1.2rem, 2.4vw, 1.9rem);
+    color: var(--cream);
+    font-weight: 400;
+    margin-bottom: 12px;
+  }
+  .wd2 .welcome-msg {
+    font-size: clamp(0.7rem, 1.2vw, 0.95rem);
+    color: rgba(245,240,232,0.75);
+    font-weight: 300;
+    line-height: 1.7;
+    max-width: 60%;
+    margin-bottom: 20px;
+  }
+  .wd2 .welcome-prompt {
+    font-size: clamp(0.6rem, 1vw, 0.78rem);
+    color: var(--amber);
+    letter-spacing: 0.12em;
+    font-weight: 300;
+    opacity: 0.8;
+  }
+
+  /* Night mode preview */
+  .night-screen {
+    filter: brightness(0.18) sepia(0.3);
+  }
+  .night-screen::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: rgba(20, 10, 5, 0.3);
+    z-index: 10;
+    pointer-events: none;
+  }
+
+  /* ── Notes below mockups ── */
+  .mockup-notes {
+    margin-top: 10px;
+    font-size: 0.78rem;
+    color: var(--sepia);
+    font-weight: 300;
+    line-height: 1.6;
+    max-width: 960px;
+    margin-left: auto;
+    margin-right: auto;
+    padding: 0 4px;
+  }
+  .mockup-notes strong { color: var(--amber); font-weight: 500; }
+
+  /* ── Comparison grid ── */
+  .comparison-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    max-width: 960px;
+    margin: 0 auto 12px;
+  }
+  .comparison-grid .frame-wrapper { max-width: 100%; margin: 0; }
+
+  /* ── Scrollspy nav ── */
+  .nav {
+    position: sticky; top: 0;
+    background: rgba(17,17,17,0.92);
+    backdrop-filter: blur(8px);
+    padding: 12px 32px;
+    display: flex; gap: 16px; flex-wrap: wrap;
+    z-index: 100;
+    margin: -32px -32px 32px;
+    border-bottom: 1px solid rgba(139,111,94,0.2);
+  }
+  .nav a {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: var(--sepia);
+    text-decoration: none;
+    letter-spacing: 0.05em;
+    transition: color 0.2s;
+  }
+  .nav a:hover { color: var(--amber); }
+  .nav-label {
+    font-size: 0.7rem;
+    color: rgba(139,111,94,0.5);
+    font-weight: 300;
+    margin-right: 4px;
+  }
+
+  /* ── Separator ── */
+  .sep {
+    border: none;
+    border-top: 1px solid rgba(139,111,94,0.2);
+    margin: 48px auto;
+    max-width: 960px;
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <span class="nav-label">family-frame /</span>
+  <a href="#kiosk">KioskScreen</a>
+  <a href="#welcome">WelcomeScreen</a>
+  <a href="#night">Night Mode</a>
+  <a href="#paper">Paper Overlay</a>
+</nav>
+
+<h1>family-frame</h1>
+<p class="subtitle">Direcciones de Diseño UX — Exploración visual · 2026-04-14</p>
+
+<!-- ═══════════════════════════════════════════
+     KIOSK SCREEN DIRECTIONS
+════════════════════════════════════════════ -->
+<div class="direction-group" id="kiosk">
+  <p class="section-label" style="max-width:960px;margin:0 auto 24px">KioskScreen — 6 direcciones</p>
+
+  <!-- D1 -->
+  <div class="frame-wrapper">
+    <p class="frame-label">D1 — "Cuadro Clásico" <span>InfoBand horizontal · Yiddish izquierda · Cumpleaños centro · Fecha derecha</span></p>
+    <div class="screen photo-warm d1">
+      <div class="paper-overlay"></div>
+      <div class="info-band">
+        <div class="yiddish-block">
+          <div class="yiddish-main">אַ גוטן טאָג, אַ ליכטיקן טאָג</div>
+          <div class="yiddish-trans">Un buen día, un día luminoso</div>
+        </div>
+        <div class="birthday-block">
+          <div class="birthday-label">Próximo cumpleaños</div>
+          <div class="birthday-name">Sofía</div>
+          <div class="birthday-days">en 3 días</div>
+        </div>
+        <div class="date-block">
+          <div class="date-day">Lunes</div>
+          <div class="date-full">14 de abril de 2026</div>
+        </div>
+      </div>
+    </div>
+    <p class="mockup-notes">
+      <strong>Pros:</strong> Toda la información visible de un vistazo · Estructura clara · Fácil de implementar<br>
+      <strong>Cons:</strong> La InfoBand compite levemente con la foto · Sensación más "app" que "cuadro"
+    </p>
+  </div>
+
+  <!-- D2 -->
+  <div class="frame-wrapper">
+    <p class="frame-label">D2 — "Cinema" <span>Vignette intensa · Yiddish italic grande · Info degradado sobre foto</span></p>
+    <div class="screen photo-family d2">
+      <div class="paper-overlay"></div>
+      <div class="info-band">
+        <div class="yiddish-block">
+          <div class="yiddish-main">אַ גוטן טאָג, אַ ליכטיקן טאָג</div>
+          <div class="yiddish-trans">Un buen día, un día luminoso</div>
+        </div>
+        <div class="right-info">
+          <div class="birthday-name">En 3 días: Sofía</div>
+          <div class="birthday-days">cumpleaños</div>
+          <div class="date-full">Lunes, 14 de abril</div>
+        </div>
+      </div>
+    </div>
+    <p class="mockup-notes">
+      <strong>Pros:</strong> Máximo impacto visual · La foto es absoluta protagonista · Muy cinematográfico<br>
+      <strong>Cons:</strong> La info es menos prominente · El vignette puede ocultar partes de la foto
+    </p>
+  </div>
+
+  <!-- D3 & D4 side by side -->
+  <div class="comparison-grid">
+    <div class="frame-wrapper">
+      <p class="frame-label">D3 — "Mural" <span>Texto flotado sin panel · Fecha arriba derecha</span></p>
+      <div class="screen photo-outdoor d3">
+        <div class="paper-overlay"></div>
+        <div class="top-date">
+          <div class="top-date-text">Lunes, 14 de abril</div>
+        </div>
+        <div class="bottom-left">
+          <div class="yiddish-main">אַ גוטן טאָג,<br>אַ ליכטיקן טאָג</div>
+          <div class="yiddish-trans">Un buen día, un día luminoso</div>
+        </div>
+        <div class="bottom-right">
+          <div class="birthday-name">Sofía</div>
+          <div class="birthday-days">cumple en 3 días</div>
+        </div>
+      </div>
+      <p class="mockup-notes">
+        <strong>Pros:</strong> La foto respira, nada interfiere · Máxima calidez visual<br>
+        <strong>Cons:</strong> Legibilidad variable según el fondo de la foto · Más complejo de implementar
+      </p>
+    </div>
+
+    <div class="frame-wrapper">
+      <p class="frame-label">D4 — "Split Panel" <span>Foto 70% · Panel derecho oscuro con toda la info</span></p>
+      <div class="screen d4">
+        <div class="photo-area">
+          <div class="photo-portrait" style="width:100%;height:100%;"></div>
+          <div class="paper-overlay"></div>
+        </div>
+        <div class="side-panel">
+          <div class="panel-date">Hoy</div>
+          <div class="panel-date-full">Lunes, 14 de abril</div>
+          <div class="panel-yiddish-label">Frase del día</div>
+          <div class="panel-yiddish">אַ גוטן טאָג,<br>אַ ליכטיקן טאָג</div>
+          <div class="panel-trans">Un buen día, un día luminoso</div>
+          <div class="panel-birthday-label">Próximo cumpleaños</div>
+          <div class="panel-birthday-name">Sofía</div>
+          <div class="panel-birthday-days">en 3 días</div>
+        </div>
+      </div>
+      <p class="mockup-notes">
+        <strong>Pros:</strong> Info siempre legible independiente de la foto · Organización clara<br>
+        <strong>Cons:</strong> La foto pierde protagonismo · Se siente más como dashboard que cuadro
+      </p>
+    </div>
+  </div>
+
+  <!-- D5 & D6 side by side -->
+  <div class="comparison-grid">
+    <div class="frame-wrapper">
+      <p class="frame-label">D5 — "Minimalista" <span>Un solo elemento visible · Yiddish directo sobre foto</span></p>
+      <div class="screen photo-interior d5">
+        <div class="paper-overlay"></div>
+        <div class="minimal-content">
+          <div class="yiddish-main">אַ גוטן טאָג,<br>אַ ליכטיקן טאָג</div>
+          <div class="yiddish-trans">Un buen día, un día luminoso</div>
+        </div>
+        <div class="dots">
+          <div class="dot active"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+      <p class="mockup-notes">
+        <strong>Pros:</strong> Máxima limpieza · La foto es todo · La frase tiene el peso que merece<br>
+        <strong>Cons:</strong> Fecha y cumpleaños no visibles simultáneamente · Rotación puede ser confusa
+      </p>
+    </div>
+
+    <div class="frame-wrapper">
+      <p class="frame-label">D6 — "Borde Cálido" <span>Foto con marco interno · Barra inferior sobre fondo charcoal</span></p>
+      <div class="screen d6">
+        <div class="photo-inset">
+          <div class="photo-celebration" style="width:100%;height:100%;"></div>
+          <div class="paper-overlay"></div>
+        </div>
+        <div class="bottom-bar">
+          <div class="yiddish-block">
+            <div class="yiddish-main">אַ גוטן טאָג, אַ ליכטיקן טאָג</div>
+            <div class="yiddish-trans">Un buen día, un día luminoso</div>
+          </div>
+          <div class="divider"></div>
+          <div class="birthday-block">
+            <div class="birthday-name">Sofía — 3 días</div>
+            <div class="birthday-days">próximo cumpleaños</div>
+          </div>
+          <div class="divider"></div>
+          <div class="date-block">
+            <div class="date-full">Lunes, 14 de abril</div>
+          </div>
+        </div>
+      </div>
+      <p class="mockup-notes">
+        <strong>Pros:</strong> Info 100% legible · Textura de portarretratos físico · Marca clara entre foto e info<br>
+        <strong>Cons:</strong> La foto pierde algo de inmersión · El borde puede verse como UI tecnológica
+      </p>
+    </div>
+  </div>
+</div>
+
+<hr class="sep">
+
+<!-- ═══════════════════════════════════════════
+     WELCOME SCREEN DIRECTIONS
+════════════════════════════════════════════ -->
+<div class="direction-group" id="welcome">
+  <p class="section-label" style="max-width:960px;margin:0 auto 24px">WelcomeScreen — 2 direcciones</p>
+
+  <div class="comparison-grid">
+    <div class="frame-wrapper">
+      <p class="frame-label">W1 — "Centrado Clásico" <span>Foto circular · Mensaje centrado abajo · Fondo oscuro</span></p>
+      <div class="screen welcome-bg wd1">
+        <div class="photo-circle">
+          <div class="photo-portrait" style="width:100%;height:100%;"></div>
+        </div>
+        <div class="welcome-text">
+          <div class="welcome-msg">
+            Para nuestros papás, con todo nuestro amor.<br>
+            Esta pantalla es un abrazo que siempre va a estar.
+          </div>
+          <div class="welcome-prompt">Tocar para ver las fotos ·</div>
+        </div>
+      </div>
+      <p class="mockup-notes">
+        <strong>Pros:</strong> Foco en las caras · El recorte circular es cálido y familiar<br>
+        <strong>Cons:</strong> Menos dramático · La foto pierde algo de la escena completa
+      </p>
+    </div>
+
+    <div class="frame-wrapper">
+      <p class="frame-label">W2 — "Dramático" <span>Foto full-bleed · Mensaje sobre degradado oscuro</span></p>
+      <div class="screen wd2">
+        <div class="photo-fullbleed">
+          <div class="photo-portrait" style="width:100%;height:100%;"></div>
+        </div>
+        <div class="paper-overlay"></div>
+        <div class="welcome-overlay">
+          <div class="welcome-title">Para Abel y Liliana</div>
+          <div class="welcome-msg">
+            Con todo nuestro amor, en el día de su 50° aniversario.<br>
+            Esta pantalla es un pedacito de familia, siempre presente.
+          </div>
+          <div class="welcome-prompt">· Tocar para ver las fotos ·</div>
+        </div>
+      </div>
+      <p class="mockup-notes">
+        <strong>Pros:</strong> Impacto máximo · La foto ocupa todo desde el primer momento · Muy emotivo<br>
+        <strong>Cons:</strong> El texto sobre foto requiere buen contraste en cualquier foto que se elija
+      </p>
+    </div>
+  </div>
+</div>
+
+<hr class="sep">
+
+<!-- ═══════════════════════════════════════════
+     NIGHT MODE PREVIEW
+════════════════════════════════════════════ -->
+<div class="direction-group" id="night">
+  <p class="section-label" style="max-width:960px;margin:0 auto 24px">Night Mode — D1 como referencia (22:00 → 07:00)</p>
+  <div class="frame-wrapper">
+    <p class="frame-label">D1 en modo noche <span>Brillo 15% · Overlay cálido adicional · Mismo layout</span></p>
+    <div class="screen photo-warm d1 night-screen">
+      <div class="paper-overlay"></div>
+      <div class="info-band">
+        <div class="yiddish-block">
+          <div class="yiddish-main">אַ גוטן טאָג, אַ ליכטיקן טאָג</div>
+          <div class="yiddish-trans">Un buen día, un día luminoso</div>
+        </div>
+        <div class="birthday-block">
+          <div class="birthday-label">Próximo cumpleaños</div>
+          <div class="birthday-name">Sofía</div>
+          <div class="birthday-days">en 3 días</div>
+        </div>
+        <div class="date-block">
+          <div class="date-day">Lunes</div>
+          <div class="date-full">14 de abril de 2026</div>
+        </div>
+      </div>
+    </div>
+    <p class="mockup-notes">
+      El CSS simula el efecto de brightness reducido. En el dispositivo real, el brillo de pantalla se controla via
+      <strong>@capacitor-community/screen-brightness</strong> + un overlay CSS cálido adicional.
+      La transición de día a noche es gradual (fade de 60 segundos), no un corte brusco.
+    </p>
+  </div>
+</div>
+
+<hr class="sep">
+
+<!-- ═══════════════════════════════════════════
+     PAPER OVERLAY COMPARISON
+════════════════════════════════════════════ -->
+<div class="direction-group" id="paper">
+  <p class="section-label" style="max-width:960px;margin:0 auto 24px">Paper Overlay — Comparación de intensidad</p>
+  <div class="comparison-grid">
+    <div class="frame-wrapper">
+      <p class="frame-label">Sin filtro <span>Foto digital pura</span></p>
+      <div class="screen photo-celebration"></div>
+    </div>
+    <div class="frame-wrapper">
+      <p class="frame-label">Paper overlay suave <span>saturate(0.85) sepia(0.08) + linen 5%</span></p>
+      <div class="screen photo-celebration paper-strong">
+        <div class="paper-overlay"></div>
+        <div style="position:absolute;inset:0;background:rgba(245,235,210,0.04);mix-blend-mode:multiply;z-index:2;"></div>
+        <div style="position:absolute;inset:0;filter:sepia(0.12) saturate(0.82);z-index:0;"></div>
+      </div>
+    </div>
+  </div>
+  <p class="mockup-notes" style="max-width:960px;">
+    La diferencia exacta entre ambas opciones debe validarse <strong>en el dispositivo físico real</strong>,
+    ya que el panel IPS LCD del tablet YUSUNOUL tiene temperatura de color y gamma propios.
+    El CSS <code>filter</code> se aplica sobre el componente <code>PhotoSlide</code> y es ajustable
+    desde el admin sin rebuilds.
+  </p>
+</div>
+
+</body>
+</html>

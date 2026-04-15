@@ -1,0 +1,8 @@
+workflows:
+  create-ux-design:
+    status: complete
+    completedAt: '2026-04-14'
+    artifact: '_bmad-output/planning-artifacts/ux-design-specification.md'
+    supportingArtifacts:
+      - '_bmad-output/planning-artifacts/ux-design-directions.html'
+      - '_bmad-output/planning-artifacts/ux-design-preview.html'
