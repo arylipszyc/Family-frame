@@ -1,0 +1,48 @@
+{
+  "name": "family-frame",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "android": "npm run build && npx cap sync android",
+    "lint": "eslint .",
+    "preview": "vite preview",
+    "test": "vitest"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/filesystem": "^8.1.2",
+    "@capacitor/network": "^8.0.1",
+    "@capacitor/preferences": "^8.0.1",
+    "@capgo/capacitor-android-kiosk": "^8.2.0",
+    "@capgo/capacitor-social-login": "^8.3.14",
+    "bcryptjs": "^3.0.3",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^8.3.0",
+    "@eslint/js": "^9.22.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@types/react": "^19.0.10",
+    "@types/react-dom": "^19.0.4",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.5.0",
+    "eslint": "^9.22.0",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.19",
+    "globals": "^15.15.0",
+    "jsdom": "^29.0.2",
+    "postcss": "^8.5.10",
+    "tailwindcss": "^3.4.19",
+    "typescript": "~5.7.2",
+    "typescript-eslint": "^8.26.1",
+    "vite": "^6.2.2",
+    "vitest": "^3.1.1"
+  }
+}
