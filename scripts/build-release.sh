@@ -86,7 +86,11 @@ if [ ! -f "$UNSIGNED_APK" ]; then
   exit 1
 fi
 
-apksigner sign \
+# En Windows apksigner viene como apksigner.bat; Git Bash no resuelve la extensión sola.
+APKSIGNER_BIN="apksigner"
+if [ -n "${WINDIR:-}" ]; then APKSIGNER_BIN="apksigner.bat"; fi
+
+"$APKSIGNER_BIN" sign \
   --ks "$KEYSTORE_PATH" \
   --ks-key-alias "$KEY_ALIAS" \
   --out "$SIGNED_APK" \
@@ -97,7 +101,7 @@ echo "    ✓ APK firmado: $SIGNED_APK"
 # ── Verificación ───────────────────────────────────────────
 echo ""
 echo "=== Verificando firma ==="
-apksigner verify --verbose "$SIGNED_APK" | head -5
+"$APKSIGNER_BIN" verify --verbose "$SIGNED_APK" | head -5
 
 echo ""
 echo "=== Build completo ==="

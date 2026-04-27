@@ -1,8 +1,8 @@
 project: family-frame
-generated_at: '2026-04-26'
+generated_at: '2026-04-27'
 generated_by: moishe
 deadline: '2026-05-12'
-days_to_deadline: 16
+days_to_deadline: 15
 
 summary:
   total_stories: 24
@@ -11,13 +11,13 @@ summary:
   in_progress: 0
   blocked: 0
   backlog: 0
-  pending_validation: 1  # Story 6.4 AC4/AC5 — requiere tablet física
+  pending_validation: 0  # Story 6.4 AC4/AC5 validados en hardware 2026-04-27 con caveat aceptado
 
 phases:
   planning: complete           # PRD + UX + Architecture + Epics — 14-abr
   implementation_code: complete  # 17 stories formales + 6 backfill pendiente
   implementation_documentation: drift  # Epics 3 y 4 sin story files
-  hardware_validation: not_started  # tablet llegó 2026-04-25
+  hardware_validation: in_progress  # Story 6.4 validada 2026-04-27; OAuth real + sync real pendiente (NS-4)
   packaging: not_started
 
 epics:
@@ -70,25 +70,25 @@ epics:
 
   epic_6:
     name: El marco funciona solo durante 6 meses
-    status: done_pending_hardware_validation
+    status: done
     stories:
       - { id: '6.1', file: 6-1-boot-receiver.md, status: done }
-      - { id: '6.2', file: 6-2-wake-lock.md, status: done }
+      - { id: '6.2', file: 6-2-wake-lock.md, status: done, caveat: 'Pantalla queda apagada al primer boot hasta toque inicial — owner aceptó como no-bloqueante 2026-04-27' }
       - { id: '6.3', file: 6-3-kiosk-mode.md, status: done }
-      - { id: '6.4', file: 6-4-build-apk.md, status: done_pending_hardware_validation, note: 'AC4/AC5 solo verificables en tablet física — pendiente desde 2026-04-15' }
+      - { id: '6.4', file: 6-4-build-apk.md, status: done, note: 'AC1-AC4 validados en hardware 2026-04-27. AC5 parcial: app arranca sola al boot pero requiere toque para encender pantalla; aceptado como caveat conocido.' }
 
 tests:
   status: passing
   count: 154
   framework: vitest + jsdom
-  note: Tests son unitarios/jsdom. Validación nativa Android (boot, WAKE_LOCK, kiosk lock, OAuth real) pendiente en hardware.
+  note: Tests son unitarios/jsdom. Validación nativa Android (boot, WAKE_LOCK, kiosk lock, OAuth real) parcialmente cubierta — falta OAuth real con Google + sync real (NS-4).
 
 risks_and_gaps:
   - id: GAP-1
     severity: closed
     title: Album ID de Google Photos sin UI de configuración
-    detail: photoSyncService lee 'googlePhotosAlbumId' de Preferences pero AdminScreen no tiene UI para setearlo. Story 5.4 explícitamente lo excluyó de scope. Sin esto el sync nunca trae fotos.
-    resolution: Cerrado 2026-04-26 por Story 4.5 — bootstrap vía album-config.json en Directory.External al boot. Validación end-to-end en hardware pendiente como parte de NS-3/NS-4.
+    detail: photoSyncService lee 'googlePhotosAlbumId' de Preferences pero AdminScreen no tiene UI para setearlo.
+    resolution: Cerrado 2026-04-26 por Story 4.5 — bootstrap vía album-config.json en Directory.External al boot.
 
   - id: GAP-2
     severity: medium
@@ -97,10 +97,9 @@ risks_and_gaps:
     impact: Si algún AC quedó sin cubrir, no lo sabemos hasta correr en tablet.
 
   - id: GAP-3
-    severity: high
-    title: Validación en hardware nunca ejecutada
-    detail: Tablet llegó 2026-04-25. Toda la validación nativa Android (boot, WAKE_LOCK, kiosk, OAuth real con Google, sync real con Photos API, ciclo 24/7) está pendiente.
-    blocker_until: keystore generado + APK firmado + sideload exitoso
+    severity: medium
+    title: Validación end-to-end con OAuth + sync real
+    detail: APK sideload + arranque automático validados 2026-04-27. Falta OAuth real con Google Photos + sync real + foto bienvenida configurada para validar Epics 3 y 4 en hardware. Bug detectado y fixeado en sesión 2026-04-27 — MainActivity onResume/onDestroy weren't compiling porque Java requería `public` para override de BridgeActivity. Story 6.4 AC1/AC2 nunca se habían corrido en realidad antes.
 
   - id: GAP-4
     severity: medium
@@ -109,31 +108,29 @@ risks_and_gaps:
 
   - id: GAP-5
     severity: low
-    title: Repositorio remoto desfasado
-    detail: GitHub aún muestra STATUS.md (legacy). 87 archivos de implementación sin commitear. Branch main tiene solo los 4 commits de planning.
+    title: Wake-on-boot requiere toque inicial
+    detail: Al primer boot, la pantalla queda apagada hasta que se toque la pantalla — aún con WAKE_LOCK adquirido en MainActivity.onCreate. Owner aceptó como no-bloqueante 2026-04-27.
+    resolution_notes: Si en el futuro se quiere fixear, parche estimado en MainActivity.java — `setTurnScreenOn(true)` + `setShowWhenLocked(true)` + `FLAG_KEEP_SCREEN_ON`. Va a Amelia con coord file.
 
 next_steps:
   recommended_order:
     - id: NS-1
       action: Higiene de repositorio (commit + push)
-      why: Tener baseline confiable antes de validar en hardware
-      effort: 30min
+      status: done  # 2026-04-26
     - id: NS-2
-      action: Resolver GAP-1 (Album ID UI o documentar paso manual)
-      why: Sin esto Epic 4 no funciona end-to-end
-      effort: 1-2h
-      status: done  # cerrado por Story 4.5 — 2026-04-26
+      action: Resolver GAP-1 (Album ID)
+      status: done  # 2026-04-26 — Story 4.5
     - id: NS-3
       action: Build APK firmado + sideload en tablet
-      why: Primera validación nativa real (Story 6.4 AC4/AC5)
-      effort: medio día (incluye keystore primera vez)
+      status: done  # 2026-04-27 — Android Studio + JDK 21 + apksigner.bat patch + fix visibility MainActivity
     - id: NS-4
-      action: Setup en tablet — admin config + OAuth real + foto bienvenida
-      why: Probar flujo end-to-end con datos reales
-      effort: 2-3h
+      action: Setup en tablet — admin config + OAuth real + foto bienvenida + album-config.json en MTP + primer sync
+      why: Probar flujo end-to-end con datos reales. Cierra GAP-3.
+      effort: 2-3h, varias iteraciones
+      blockers: GAP-4 (foto y mensaje a coordinar con hermanos)
     - id: NS-5
       action: Backfill stories 3.x/4.x
-      why: Auditoría formal — puede esperar a después de validación en hardware
+      why: Auditoría formal — puede esperar a después de NS-4
       effort: 2-3h
     - id: NS-6
       action: Stress test 24-48h (boot, WAKE_LOCK, night mode, kiosk)

@@ -21,7 +21,7 @@ public class MainActivity extends BridgeActivity {
 
     @Override
     @SuppressWarnings("deprecation")
-    protected void onResume() {
+    public void onResume() {
         super.onResume();
         // Re-acquire if released while in background (e.g., accidental home press before kiosk mode)
         if (wakeLock != null && !wakeLock.isHeld()) {
@@ -30,7 +30,7 @@ public class MainActivity extends BridgeActivity {
     }
 
     @Override
-    protected void onDestroy() {
+    public void onDestroy() {
         super.onDestroy();
         if (wakeLock != null && wakeLock.isHeld()) {
             wakeLock.release();
