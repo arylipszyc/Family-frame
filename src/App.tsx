@@ -7,6 +7,7 @@ import { photoCacheService } from './services/photoCacheService'
 import { pinService } from './services/pinService'
 import { adminContentService } from './services/adminContentService'
 import { systemSettingsService } from './services/systemSettingsService'
+import { albumConfigService } from './services/albumConfigService'
 import { useSettingsStore } from './stores/settingsStore'
 import { useSync } from './hooks/useSync'
 import { KioskScreen } from './screens/KioskScreen'
@@ -44,6 +45,7 @@ function App() {
       systemSettingsService.loadPhotoRotationInterval(),
       systemSettingsService.loadNightModeStart(),
       systemSettingsService.loadNightModeEnd(),
+      albumConfigService.bootstrapFromFile(),
     ]).then(([config, photos, , phrases, birthdays, rotInterval, nightStart, nightEnd]) => {
       if (config)       setWelcomeConfig(config)
       if (photos.length > 0) setPhotos(photos)

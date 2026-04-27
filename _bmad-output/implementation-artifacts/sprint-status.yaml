@@ -5,8 +5,8 @@ deadline: '2026-05-12'
 days_to_deadline: 16
 
 summary:
-  total_stories: 23
-  done: 17
+  total_stories: 24
+  done: 18
   done_undocumented: 6   # implementados en código, sin story file (Epics 3 y 4)
   in_progress: 0
   blocked: 0
@@ -51,12 +51,13 @@ epics:
   epic_4:
     name: Las fotos de la familia se sincronizan solas
     status: done_undocumented
-    note: OAuth + Photos sync + caché local implementados. Falta backfill 4.1-4.4 + validación en hardware con OAuth real.
+    note: OAuth + Photos sync + caché local implementados. Falta backfill 4.1-4.4 + validación en hardware con OAuth real. Story 4.5 cierra GAP-1 (bootstrap del Album ID).
     stories:
       - { id: '4.1', file: null, status: done_undocumented, evidence: 'src/services/photoCacheService.ts' }
       - { id: '4.2', file: null, status: done_undocumented, evidence: 'src/services/oauthService.ts (@capgo/capacitor-social-login)' }
       - { id: '4.3', file: null, status: done_undocumented, evidence: 'src/services/photoSyncService.ts' }
       - { id: '4.4', file: null, status: done_undocumented, evidence: 'src/hooks/useSync.ts' }
+      - { id: '4.5', file: 4-5-album-config-bootstrap.md, status: done, note: 'Cierra GAP-1 — bootstrap del albumId vía album-config.json al boot' }
 
   epic_5:
     name: Ary puede gestionar el marco
@@ -78,18 +79,16 @@ epics:
 
 tests:
   status: passing
-  count: 148
+  count: 154
   framework: vitest + jsdom
   note: Tests son unitarios/jsdom. Validación nativa Android (boot, WAKE_LOCK, kiosk lock, OAuth real) pendiente en hardware.
 
 risks_and_gaps:
   - id: GAP-1
-    severity: high
+    severity: closed
     title: Album ID de Google Photos sin UI de configuración
     detail: photoSyncService lee 'googlePhotosAlbumId' de Preferences pero AdminScreen no tiene UI para setearlo. Story 5.4 explícitamente lo excluyó de scope. Sin esto el sync nunca trae fotos.
-    options:
-      - Agregar mini-story 5.5 con input "Album ID o URL de álbum compartido"
-      - Documentar como paso manual via adb shell + Preferences en setup inicial
+    resolution: Cerrado 2026-04-26 por Story 4.5 — bootstrap vía album-config.json en Directory.External al boot. Validación end-to-end en hardware pendiente como parte de NS-3/NS-4.
 
   - id: GAP-2
     severity: medium
@@ -123,6 +122,7 @@ next_steps:
       action: Resolver GAP-1 (Album ID UI o documentar paso manual)
       why: Sin esto Epic 4 no funciona end-to-end
       effort: 1-2h
+      status: done  # cerrado por Story 4.5 — 2026-04-26
     - id: NS-3
       action: Build APK firmado + sideload en tablet
       why: Primera validación nativa real (Story 6.4 AC4/AC5)
