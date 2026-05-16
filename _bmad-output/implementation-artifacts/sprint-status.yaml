@@ -1,24 +1,24 @@
 project: family-frame
 generated_at: '2026-05-16'
-generated_by: amelia
+generated_by: moishe
 deadline: '2026-05-19'
 days_to_deadline: 3
 
 summary:
   total_stories: 25
-  done: 19              # 17 originales + 4.5 + 4.6 (drive-sa-rewrite); deprecadas no cuentan
-  done_undocumented: 4  # 3.1, 3.2, 4.1, 4.4 (Epic 3/4 backfill pendiente)
-  deprecated: 2         # 4.2 (OAuth) + 4.3 (Photos sync) — reemplazadas por 4.6
+  done: 19
+  done_undocumented: 4
+  deprecated: 2
   in_progress: 0
   blocked: 0
   backlog: 0
-  pending_validation: 1 # 4.6 — bootstrap end-to-end en hardware con sa-config + drive-folder-config
+  pending_validation: 0  # 4.6 validada end-to-end en hardware 2026-05-16 (sa-config + drive-folder-config + bootstrap + sync real)
 
 phases:
-  planning: complete           # PRD + UX + Architecture + Epics — 14-abr
-  implementation_code: complete  # 17 stories formales + 6 backfill pendiente
-  implementation_documentation: drift  # Epics 3 y 4 sin story files
-  hardware_validation: in_progress  # Story 6.4 validada 2026-04-27; OAuth real + sync real pendiente (NS-4)
+  planning: complete
+  implementation_code: complete
+  implementation_documentation: drift
+  hardware_validation: validated  # 4.6 + Drive sync + rotación + objectFit + cache recursive fix — todo 2026-05-16
   packaging: not_started
 
 epics:
@@ -102,14 +102,18 @@ risks_and_gaps:
     impact: Si algún AC quedó sin cubrir, no lo sabemos hasta correr en tablet.
 
   - id: GAP-3
-    severity: medium
+    severity: closed
     title: Validación end-to-end con Drive + SA + sync real
     detail: |
       APK sideload + arranque automático validados 2026-04-27. Photos API + OAuth tried 2026-05-16 y rota
-      (insufficient scopes). Reescritura a Drive + SA completada 2026-05-16 (story 4.6). Falta copia de
-      sa-config.json + drive-folder-config.json a la tablet por MTP, verificación de bootstrap, y primer
-      sync real contra family-frame-fotos (folderId 1nG1xCgiqWfJjXX4ZMHxjOsUGCIhsen32).
-    next_step: NS-4-bis
+      (insufficient scopes). Reescritura a Drive + SA completada 2026-05-16 (story 4.6).
+    resolution: |
+      Cerrado 2026-05-16 — flow end-to-end validado en hardware: sa-config.json + drive-folder-config.json
+      copiados por MTP, bootstrap los procesó y borró al boot, AdminScreen muestra "SA configurado ✓",
+      forzar sync trae fotos de family-frame-fotos. Descubrió y se fixearon 3 bugs preexistentes:
+      (a) photoCacheService.savePhoto faltaba `recursive: true` (Story 4.1 done_undocumented),
+      (b) KioskScreen no pasaba intervalMs prop a PhotoSlide — rotación quedaba en default 30s (Story 2.1),
+      (c) PhotoSlide objectFit cover→contain para fotos verticales (cabezas cortadas).
 
   - id: GAP-4
     severity: medium
@@ -137,22 +141,23 @@ next_steps:
       action: Setup en tablet — admin config + OAuth real + foto bienvenida + album-config.json en MTP + primer sync
       status: superseded_by_NS-4-bis  # 2026-05-16 — Photos API deprecada, reescrito a Drive+SA
     - id: NS-4-bis
-      action: |
-        Setup en tablet — admin config + foto bienvenida + sa-config.json + drive-folder-config.json por MTP + primer sync Drive.
-        Build APK firmado nuevo con cambios de story 4.6 (sin SocialLogin), sideload, validar bootstrap (archivos desaparecen),
-        AdminScreen muestra "SA configurado ✓", forzar sync trae fotos de family-frame-fotos.
-      why: Probar flujo end-to-end con Drive + SA. Cierra GAP-3.
-      effort: 1-2h
-      blockers: GAP-4 (foto y mensaje a coordinar con hermanos) — independiente del sync
+      action: Setup tablet + sa-config + drive-folder-config + primer sync Drive end-to-end
+      status: done  # 2026-05-16 — flow validado, 3 bugs hardware-discovered y fixeados, GAP-3 cerrado
     - id: NS-5
       action: Backfill stories 3.x/4.x
-      why: Auditoría formal — puede esperar a después de NS-4
+      why: Auditoría formal — puede esperar a después del regalo
       effort: 2-3h
     - id: NS-6
-      action: Stress test 24-48h (boot, WAKE_LOCK, night mode, kiosk)
+      action: Stress test 24-48h (boot, WAKE_LOCK, night mode, kiosk, sync periódico Drive)
       why: Detectar drift antes del deadline
       effort: pasivo, 2 días
+      status: in_progress  # arrancado 2026-05-16 ~19:00, tablet enchufada con kiosk activo + WiFi
     - id: NS-7
       action: Empaquetado físico (marco de madera + tablet)
       why: Entregar el regalo
       effort: depende de Ary y artesano
+    - id: NS-8
+      action: Sesión de rediseño visual con Sally → Amelia (layout split foto/panel, fonts, reloj, próximos cumpleaños)
+      why: Pedido owner 2026-05-16 — versión actual funcional pero sin pulido visual
+      effort: 4-6h (Sally mockup + Amelia impl + iteración)
+      blockers: ninguno técnico, depende de capacidad de Ary post-stress test
