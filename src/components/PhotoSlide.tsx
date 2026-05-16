@@ -170,7 +170,7 @@ const imgBaseStyle: CSSProperties = {
   left: 0,
   width: '100%',
   height: '100%',
-  objectFit: 'cover',
+  objectFit: 'contain',
   filter: 'saturate(0.85) brightness(0.95) sepia(0.08)',
 }
 

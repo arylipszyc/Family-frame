@@ -108,7 +108,7 @@ export function KioskScreen() {
 
   return (
     <div style={{ ...rootContainerStyle, transform: `translate(${shiftX}px, ${shiftY}px)` }}>
-      <PhotoSlide photos={photos} />
+      <PhotoSlide photos={photos} intervalMs={photoRotationInterval} />
       <YiddishPhrase phrases={yiddishPhrases} />
       <DateDisplay />
       <BirthdayCountdown birthdays={birthdays} rotationSlot={rotationSlot} />

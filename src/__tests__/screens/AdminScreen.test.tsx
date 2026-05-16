@@ -3,7 +3,7 @@ import { render, fireEvent, waitFor, cleanup } from '@testing-library/react'
 
 // ── Hoisted mocks ─────────────────────────────────────────────────────────────
 
-const { mockAdminContent, mockStorageService, mockSystemSettings, mockPinService, mockOAuthService, mockPhotoSync, mockKiosk } = vi.hoisted(() => ({
+const { mockAdminContent, mockStorageService, mockSystemSettings, mockPinService, mockDriveAuth, mockDriveSync, mockKiosk } = vi.hoisted(() => ({
   mockAdminContent: {
     saveYiddishPhrases: vi.fn().mockResolvedValue(undefined),
     loadYiddishPhrases: vi.fn().mockResolvedValue(null),
@@ -27,12 +27,10 @@ const { mockAdminContent, mockStorageService, mockSystemSettings, mockPinService
     setPin:    vi.fn().mockResolvedValue(undefined),
     initPin:   vi.fn().mockResolvedValue(undefined),
   },
-  mockOAuthService: {
+  mockDriveAuth: {
     isAuthenticated: vi.fn().mockResolvedValue(false),
-    getEmail:        vi.fn().mockResolvedValue(null),
-    login:           vi.fn().mockResolvedValue(undefined),
   },
-  mockPhotoSync: {
+  mockDriveSync: {
     sync: vi.fn().mockResolvedValue(0),
   },
   mockKiosk: {
@@ -46,8 +44,8 @@ vi.mock('../../services/adminContentService',   () => ({ adminContentService:   
 vi.mock('../../services/storageService',        () => ({ storageService:        mockStorageService }))
 vi.mock('../../services/systemSettingsService', () => ({ systemSettingsService: mockSystemSettings }))
 vi.mock('../../services/pinService',            () => ({ pinService:            mockPinService }))
-vi.mock('../../services/oauthService',          () => ({ oauthService:          mockOAuthService }))
-vi.mock('../../services/photoSyncService',      () => ({ photoSyncService:      mockPhotoSync }))
+vi.mock('../../services/driveAuthService',      () => ({ driveAuthService:      mockDriveAuth }))
+vi.mock('../../services/driveSyncService',      () => ({ driveSyncService:      mockDriveSync }))
 vi.mock('@capgo/capacitor-android-kiosk',       () => ({ CapacitorAndroidKiosk: mockKiosk }))
 
 // ── Subjects ───────────────────────────────────────────────────────────────────
@@ -74,9 +72,9 @@ beforeEach(() => {
   useDisplayStore.setState({ mode: 'admin', currentPhotoIndex: 0 })
   useSettingsStore.setState({ photoRotationInterval: 30_000, nightModeStart: '22:00', nightModeEnd: '07:00' })
   useSyncStore.setState({ syncStatus: 'idle', lastSync: null, isOnline: false })
-  // Default: desconectado
-  mockOAuthService.isAuthenticated.mockResolvedValue(false)
-  mockOAuthService.getEmail.mockResolvedValue(null)
+  // Default: SA no configurado
+  mockDriveAuth.isAuthenticated.mockResolvedValue(false)
+  mockDriveSync.sync.mockResolvedValue(0)
   // Default: kiosk activo
   mockKiosk.isInKioskMode.mockResolvedValue({ isInKioskMode: true })
   mockKiosk.enterKioskMode.mockResolvedValue(undefined)
@@ -497,30 +495,20 @@ describe('AdminScreen — Sección Configuración: cambio de PIN', () => {
   })
 })
 
-describe('AdminScreen — Sección Fotos', () => {
-  it('renderiza la sección Fotos con estado desconectado por defecto', async () => {
+describe('AdminScreen — Sección Fotos (Drive + SA)', () => {
+  it('renderiza la sección Fotos con estado "SA no configurado" por defecto', async () => {
     const { getByTestId } = render(<AdminScreen />)
     await waitFor(() => {
       expect(getByTestId('section-photos')).toBeDefined()
-      expect(getByTestId('oauth-status').textContent).toContain('Desconectado')
+      expect(getByTestId('sa-status').textContent).toContain('SA no configurado')
     })
   })
 
-  it('muestra estado "Conectado como [email]" cuando está autenticado', async () => {
-    mockOAuthService.isAuthenticated.mockResolvedValue(true)
-    mockOAuthService.getEmail.mockResolvedValue('ary@gmail.com')
+  it('muestra "SA configurado ✓" cuando driveAuthService.isAuthenticated() es true', async () => {
+    mockDriveAuth.isAuthenticated.mockResolvedValue(true)
     const { getByTestId } = render(<AdminScreen />)
     await waitFor(() => {
-      expect(getByTestId('oauth-status').textContent).toContain('Conectado como ary@gmail.com')
-    })
-  })
-
-  it('muestra "Conectado como Google Photos" si está autenticado pero sin email', async () => {
-    mockOAuthService.isAuthenticated.mockResolvedValue(true)
-    mockOAuthService.getEmail.mockResolvedValue(null)
-    const { getByTestId } = render(<AdminScreen />)
-    await waitFor(() => {
-      expect(getByTestId('oauth-status').textContent).toContain('Conectado como Google Photos')
+      expect(getByTestId('sa-status').textContent).toContain('SA configurado')
     })
   })
 
@@ -533,31 +521,28 @@ describe('AdminScreen — Sección Fotos', () => {
     expect(getByTestId('photo-count').textContent).toContain('2 fotos en caché')
   })
 
-  it('btn-force-sync está deshabilitado con texto correcto cuando no autenticado', () => {
+  it('btn-force-sync está deshabilitado con texto correcto cuando SA no configurado', async () => {
     const { getByTestId } = render(<AdminScreen />)
+    await waitFor(() => {
+      expect(getByTestId('sa-status').textContent).toContain('SA no configurado')
+    })
     const btn = getByTestId('btn-force-sync') as HTMLButtonElement
     expect(btn.disabled).toBe(true)
-    expect(btn.textContent).toContain('Conectar Google Photos primero')
+    expect(btn.textContent).toContain('SA no configurado')
   })
 
-  it('handleConnectOAuth conecta y actualiza estado OAuth', async () => {
-    mockOAuthService.login.mockResolvedValue(undefined)
-    mockOAuthService.getEmail.mockResolvedValue('ary@gmail.com')
+  it('btn-force-sync se habilita cuando SA está configurado', async () => {
+    mockDriveAuth.isAuthenticated.mockResolvedValue(true)
     const { getByTestId } = render(<AdminScreen />)
-    // Wait for initial auth check to complete
     await waitFor(() => {
-      expect(getByTestId('btn-connect-oauth')).toBeDefined()
+      expect((getByTestId('btn-force-sync') as HTMLButtonElement).disabled).toBe(false)
     })
-    fireEvent.click(getByTestId('btn-connect-oauth'))
-    await waitFor(() => {
-      expect(getByTestId('oauth-status').textContent).toContain('Conectado como ary@gmail.com')
-    })
+    expect((getByTestId('btn-force-sync') as HTMLButtonElement).textContent).toContain('Forzar sincronización')
   })
 
   it('handleForceSync muestra toast "X fotos nuevas" cuando hay fotos nuevas', async () => {
-    mockOAuthService.isAuthenticated.mockResolvedValue(true)
-    mockOAuthService.getEmail.mockResolvedValue('ary@gmail.com')
-    mockPhotoSync.sync.mockResolvedValue(3)
+    mockDriveAuth.isAuthenticated.mockResolvedValue(true)
+    mockDriveSync.sync.mockResolvedValue(3)
     const { getByTestId } = render(<AdminScreen />)
     await waitFor(() => {
       expect((getByTestId('btn-force-sync') as HTMLButtonElement).disabled).toBe(false)
@@ -569,9 +554,8 @@ describe('AdminScreen — Sección Fotos', () => {
   })
 
   it('handleForceSync muestra "Sin fotos nuevas" cuando no hay cambios', async () => {
-    mockOAuthService.isAuthenticated.mockResolvedValue(true)
-    mockOAuthService.getEmail.mockResolvedValue('ary@gmail.com')
-    mockPhotoSync.sync.mockResolvedValue(0)
+    mockDriveAuth.isAuthenticated.mockResolvedValue(true)
+    mockDriveSync.sync.mockResolvedValue(0)
     const { getByTestId } = render(<AdminScreen />)
     await waitFor(() => {
       expect((getByTestId('btn-force-sync') as HTMLButtonElement).disabled).toBe(false)
@@ -582,10 +566,9 @@ describe('AdminScreen — Sección Fotos', () => {
     })
   })
 
-  it('handleForceSync muestra toast de error en sepia cuando sync falla', async () => {
-    mockOAuthService.isAuthenticated.mockResolvedValue(true)
-    mockOAuthService.getEmail.mockResolvedValue('ary@gmail.com')
-    mockPhotoSync.sync.mockRejectedValue(new Error('network error'))
+  it('handleForceSync muestra toast de error cuando sync falla', async () => {
+    mockDriveAuth.isAuthenticated.mockResolvedValue(true)
+    mockDriveSync.sync.mockRejectedValue(new Error('network error'))
     const { getByTestId } = render(<AdminScreen />)
     await waitFor(() => {
       expect((getByTestId('btn-force-sync') as HTMLButtonElement).disabled).toBe(false)

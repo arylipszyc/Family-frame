@@ -53,6 +53,7 @@ export const photoCacheService = {
       path,
       data:      base64Data,
       directory: Directory.Data,
+      recursive: true,
     })
 
     cacheIndex.set(id, {

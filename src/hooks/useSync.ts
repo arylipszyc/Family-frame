@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { Network } from '@capacitor/network'
-import { oauthService } from '../services/oauthService'
-import { photoSyncService } from '../services/photoSyncService'
+import { driveAuthService } from '../services/driveAuthService'
+import { driveSyncService } from '../services/driveSyncService'
 import { useSyncStore } from '../stores/syncStore'
 
 /**
@@ -15,30 +15,26 @@ export function useSync(): void {
     let removeListener: (() => void) | null = null
 
     async function startNetworkSync(): Promise<void> {
-      // Snapshot current connectivity
       const status = await Network.getStatus()
       setIsOnline(status.connected)
 
-      // Register listener once — no duplicates across restarts
       const handle = await Network.addListener('networkStatusChange', async (networkStatus) => {
         setIsOnline(networkStatus.connected)
 
         if (!networkStatus.connected) return
 
-        // Guard against concurrent syncs
         const { syncStatus } = useSyncStore.getState()
         if (syncStatus === 'syncing') return
 
-        const isAuth = await oauthService.isAuthenticated()
-        if (isAuth) photoSyncService.sync()   // fire-and-forget
+        const isAuth = await driveAuthService.isAuthenticated()
+        if (isAuth) driveSyncService.sync()   // fire-and-forget
       })
 
       removeListener = () => handle.remove()
 
-      // Immediate sync on boot if already connected
       if (status.connected) {
-        const isAuth = await oauthService.isAuthenticated()
-        if (isAuth) photoSyncService.sync()   // fire-and-forget
+        const isAuth = await driveAuthService.isAuthenticated()
+        if (isAuth) driveSyncService.sync()   // fire-and-forget
       }
     }
 

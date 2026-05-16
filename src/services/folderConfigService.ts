@@ -1,24 +1,24 @@
 import { Filesystem, Directory, Encoding } from '@capacitor/filesystem'
 import { Preferences } from '@capacitor/preferences'
 
-const CONFIG_FILE   = 'album-config.json'
-const ALBUM_ID_KEY  = 'googlePhotosAlbumId'
+const CONFIG_FILE   = 'drive-folder-config.json'
+const FOLDER_ID_KEY = 'googleDriveFolderId'
 
-interface AlbumConfigFile {
-  albumId: string
+interface FolderConfigFile {
+  folderId: string
 }
 
-function isValidConfig(parsed: unknown): parsed is AlbumConfigFile {
+function isValidConfig(parsed: unknown): parsed is FolderConfigFile {
   return (
     typeof parsed === 'object' &&
     parsed !== null &&
-    'albumId' in parsed &&
-    typeof (parsed as { albumId: unknown }).albumId === 'string' &&
-    (parsed as { albumId: string }).albumId.trim().length > 0
+    'folderId' in parsed &&
+    typeof (parsed as { folderId: unknown }).folderId === 'string' &&
+    (parsed as { folderId: string }).folderId.trim().length > 0
   )
 }
 
-export const albumConfigService = {
+export const folderConfigService = {
   async bootstrapFromFile(): Promise<void> {
     let raw: string
     try {
@@ -29,7 +29,6 @@ export const albumConfigService = {
       })
       raw = typeof result.data === 'string' ? result.data : await result.data.text()
     } catch {
-      // File not present — expected case, no-op
       return
     }
 
@@ -37,21 +36,21 @@ export const albumConfigService = {
     try {
       parsed = JSON.parse(raw)
     } catch {
-      console.info('[albumConfigService] album-config.json malformed, ignoring')
+      console.info('[folderConfigService] drive-folder-config.json malformed, ignoring')
       return
     }
 
     if (!isValidConfig(parsed)) {
-      console.info('[albumConfigService] album-config.json missing/invalid albumId, ignoring')
+      console.info('[folderConfigService] drive-folder-config.json missing/invalid folderId, ignoring')
       return
     }
 
-    await Preferences.set({ key: ALBUM_ID_KEY, value: parsed.albumId })
+    await Preferences.set({ key: FOLDER_ID_KEY, value: parsed.folderId })
 
     try {
       await Filesystem.deleteFile({ path: CONFIG_FILE, directory: Directory.External })
     } catch (err) {
-      console.warn('[albumConfigService] failed to delete album-config.json after bootstrap:', err)
+      console.warn('[folderConfigService] failed to delete drive-folder-config.json after bootstrap:', err)
     }
   },
 }

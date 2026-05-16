@@ -8,8 +8,8 @@ import { adminContentService } from '../services/adminContentService'
 import { systemSettingsService } from '../services/systemSettingsService'
 import { storageService } from '../services/storageService'
 import { pinService } from '../services/pinService'
-import { oauthService } from '../services/oauthService'
-import { photoSyncService } from '../services/photoSyncService'
+import { driveAuthService } from '../services/driveAuthService'
+import { driveSyncService } from '../services/driveSyncService'
 import { CapacitorAndroidKiosk } from '@capgo/capacitor-android-kiosk'
 import { useSyncStore } from '../stores/syncStore'
 import { Toast } from '../components/Toast'
@@ -217,10 +217,9 @@ export function AdminScreen() {
   const [confirmPin, setConfirmPin] = useState('')
   const [pinErrors,  setPinErrors]  = useState({ current: false, newPin: false, confirm: false })
 
-  // Fotos / OAuth
-  const [isOAuthAuthenticated, setIsOAuthAuthenticated] = useState(false)
-  const [connectedEmail, setConnectedEmail]             = useState<string | null>(null)
-  const [isSyncing, setIsSyncing]                       = useState(false)
+  // Fotos / Drive SA
+  const [isSAConfigured, setIsSAConfigured] = useState<boolean | null>(null)
+  const [isSyncing, setIsSyncing]           = useState(false)
 
   // Kiosk mode
   const [kioskEnabled, setKioskEnabled] = useState(true)
@@ -536,16 +535,12 @@ export function AdminScreen() {
     }
   }, [currentPin, newPin, confirmPin])
 
-  // ── Fotos / OAuth ────────────────────────────────────────────────────────────
+  // ── Fotos / Drive SA ─────────────────────────────────────────────────────────
 
   useEffect(() => {
     void (async () => {
-      const authenticated = await oauthService.isAuthenticated()
-      setIsOAuthAuthenticated(authenticated)
-      if (authenticated) {
-        const email = await oauthService.getEmail()
-        setConnectedEmail(email)
-      }
+      const configured = await driveAuthService.isAuthenticated()
+      setIsSAConfigured(configured)
       // Sincronizar estado kiosk real (puede diferir si se llamó exitKioskMode en sesión anterior)
       try {
         const { isInKioskMode } = await CapacitorAndroidKiosk.isInKioskMode()
@@ -556,23 +551,11 @@ export function AdminScreen() {
     })()
   }, [])
 
-  const handleConnectOAuth = useCallback(async () => {
-    try {
-      await oauthService.login()
-      const email = await oauthService.getEmail()
-      setIsOAuthAuthenticated(true)
-      setConnectedEmail(email)
-      showToast('Conectado a Google Photos ✓', AMBER)
-    } catch {
-      showToast('Error al conectar con Google', SEPIA)
-    }
-  }, [])
-
   const handleForceSync = useCallback(async () => {
-    if (!isOAuthAuthenticated || isSyncing) return
+    if (!isSAConfigured || isSyncing) return
     setIsSyncing(true)
     try {
-      const newCount = await photoSyncService.sync()
+      const newCount = await driveSyncService.sync()
       if (newCount > 0) {
         showToast(`${newCount} fotos nuevas sincronizadas`, AMBER, 3000)
       } else {
@@ -583,7 +566,7 @@ export function AdminScreen() {
     } finally {
       setIsSyncing(false)
     }
-  }, [isOAuthAuthenticated, isSyncing])
+  }, [isSAConfigured, isSyncing])
 
   // ── Sistema ──────────────────────────────────────────────────────────────────
 
@@ -815,11 +798,13 @@ export function AdminScreen() {
           <div style={sectionTitleStyle}>Fotos</div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {/* Estado OAuth */}
-            <div style={{ fontSize: '16px' }} data-testid="oauth-status">
-              {isOAuthAuthenticated
-                ? `Conectado como ${connectedEmail ?? 'Google Photos'}`
-                : 'Desconectado — reconectar necesario'
+            {/* Estado Service Account */}
+            <div style={{ fontSize: '16px' }} data-testid="sa-status">
+              {isSAConfigured === null
+                ? 'Verificando configuración...'
+                : isSAConfigured
+                  ? 'SA configurado ✓'
+                  : 'SA no configurado — copiá sa-config.json por USB a /Android/data/com.familyframe.app/files/'
               }
             </div>
 
@@ -836,33 +821,22 @@ export function AdminScreen() {
               {photos.length} fotos en caché
             </div>
 
-            {/* Botón conectar (solo si no autenticado) */}
-            {!isOAuthAuthenticated && (
-              <button
-                style={{ ...primaryBtnStyle, width: 'fit-content' }}
-                onClick={handleConnectOAuth}
-                data-testid="btn-connect-oauth"
-              >
-                Conectar Google Photos
-              </button>
-            )}
-
             {/* Botón sync */}
             <button
               style={{
                 ...primaryBtnStyle,
                 width: 'fit-content',
-                ...(!isOAuthAuthenticated || isSyncing ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
+                ...(!isSAConfigured || isSyncing ? { opacity: 0.5, cursor: 'not-allowed' } : {}),
               }}
               onClick={handleForceSync}
-              disabled={!isOAuthAuthenticated || isSyncing}
+              disabled={!isSAConfigured || isSyncing}
               data-testid="btn-force-sync"
             >
               {isSyncing
                 ? 'Sincronizando...'
-                : isOAuthAuthenticated
+                : isSAConfigured
                   ? 'Forzar sincronización'
-                  : 'Conectar Google Photos primero'
+                  : 'SA no configurado'
               }
             </button>
           </div>

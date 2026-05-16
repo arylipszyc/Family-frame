@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, waitFor, cleanup } from '@testing-library/react'
 
-// ── Hoisted mocks ─────────────────────────────────────────────────────────────
-
-const { mockNetwork, mockOAuth, mockPhotoSync } = vi.hoisted(() => {
+const { mockNetwork, mockDriveAuth, mockDriveSync } = vi.hoisted(() => {
   const callbacks: Array<(status: { connected: boolean }) => void> = []
 
   return {
@@ -18,39 +16,33 @@ const { mockNetwork, mockOAuth, mockPhotoSync } = vi.hoisted(() => {
       _trigger:    (status: { connected: boolean }) => callbacks.forEach((cb) => cb(status)),
       _clear:      () => { callbacks.length = 0 },
     },
-    mockOAuth: {
+    mockDriveAuth: {
       isAuthenticated: vi.fn().mockResolvedValue(false),
     },
-    mockPhotoSync: {
+    mockDriveSync: {
       sync: vi.fn().mockResolvedValue(undefined),
     },
   }
 })
 
-vi.mock('@capacitor/network',              () => ({ Network: mockNetwork }))
-vi.mock('../../services/oauthService',     () => ({ oauthService:     mockOAuth }))
-vi.mock('../../services/photoSyncService', () => ({ photoSyncService: mockPhotoSync }))
-
-// ── Subject ───────────────────────────────────────────────────────────────────
+vi.mock('@capacitor/network',                () => ({ Network: mockNetwork }))
+vi.mock('../../services/driveAuthService',   () => ({ driveAuthService: mockDriveAuth }))
+vi.mock('../../services/driveSyncService',   () => ({ driveSyncService: mockDriveSync }))
 
 import { useSync }      from '../../hooks/useSync'
 import { useSyncStore } from '../../stores/syncStore'
-
-// ── Setup ─────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
   vi.clearAllMocks()
   mockNetwork._clear()
   useSyncStore.setState({ syncStatus: 'idle', lastSync: null, isOnline: false })
   mockNetwork.getStatus.mockResolvedValue({ connected: false })
-  mockOAuth.isAuthenticated.mockResolvedValue(false)
+  mockDriveAuth.isAuthenticated.mockResolvedValue(false)
 })
 
 afterEach(() => {
   cleanup()
 })
-
-// ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('useSync', () => {
   it('reflects initial online status on mount (connected)', async () => {
@@ -86,23 +78,21 @@ describe('useSync', () => {
     })
   })
 
-  it('triggers sync when WiFi reconnects and user is authenticated', async () => {
-    mockOAuth.isAuthenticated.mockResolvedValue(true)
+  it('triggers sync when WiFi reconnects and SA is configured', async () => {
+    mockDriveAuth.isAuthenticated.mockResolvedValue(true)
 
     renderHook(() => useSync())
 
-    // Wait for listener to be registered
     await waitFor(() => expect(mockNetwork.addListener).toHaveBeenCalled())
 
-    // Simulate WiFi reconnect
     mockNetwork._trigger({ connected: true })
 
-    await waitFor(() => expect(mockPhotoSync.sync).toHaveBeenCalledOnce())
+    await waitFor(() => expect(mockDriveSync.sync).toHaveBeenCalledOnce())
     expect(useSyncStore.getState().isOnline).toBe(true)
   })
 
-  it('does not sync on WiFi reconnect when not authenticated', async () => {
-    mockOAuth.isAuthenticated.mockResolvedValue(false)
+  it('does not sync on WiFi reconnect when SA is not configured', async () => {
+    mockDriveAuth.isAuthenticated.mockResolvedValue(false)
 
     renderHook(() => useSync())
 
@@ -110,14 +100,13 @@ describe('useSync', () => {
 
     mockNetwork._trigger({ connected: true })
 
-    // Give async callbacks time to settle
     await waitFor(() => expect(useSyncStore.getState().isOnline).toBe(true))
 
-    expect(mockPhotoSync.sync).not.toHaveBeenCalled()
+    expect(mockDriveSync.sync).not.toHaveBeenCalled()
   })
 
   it('does not start a second sync when one is already in progress', async () => {
-    mockOAuth.isAuthenticated.mockResolvedValue(true)
+    mockDriveAuth.isAuthenticated.mockResolvedValue(true)
     useSyncStore.setState({ syncStatus: 'syncing', lastSync: null, isOnline: false })
 
     renderHook(() => useSync())
@@ -128,29 +117,28 @@ describe('useSync', () => {
 
     await waitFor(() => expect(useSyncStore.getState().isOnline).toBe(true))
 
-    expect(mockPhotoSync.sync).not.toHaveBeenCalled()
+    expect(mockDriveSync.sync).not.toHaveBeenCalled()
   })
 
-  it('triggers initial sync on boot if already connected and authenticated', async () => {
+  it('triggers initial sync on boot if already connected and SA configured', async () => {
     mockNetwork.getStatus.mockResolvedValue({ connected: true })
-    mockOAuth.isAuthenticated.mockResolvedValue(true)
+    mockDriveAuth.isAuthenticated.mockResolvedValue(true)
 
     renderHook(() => useSync())
 
-    await waitFor(() => expect(mockPhotoSync.sync).toHaveBeenCalledOnce())
+    await waitFor(() => expect(mockDriveSync.sync).toHaveBeenCalledOnce())
   })
 
-  it('does not sync on boot when already connected but not authenticated', async () => {
+  it('does not sync on boot when already connected but SA not configured', async () => {
     mockNetwork.getStatus.mockResolvedValue({ connected: true })
-    mockOAuth.isAuthenticated.mockResolvedValue(false)
+    mockDriveAuth.isAuthenticated.mockResolvedValue(false)
 
     renderHook(() => useSync())
 
     await waitFor(() => expect(mockNetwork.addListener).toHaveBeenCalled())
 
-    // Extra tick for async auth check to settle
     await new Promise((r) => setTimeout(r, 30))
 
-    expect(mockPhotoSync.sync).not.toHaveBeenCalled()
+    expect(mockDriveSync.sync).not.toHaveBeenCalled()
   })
 })
