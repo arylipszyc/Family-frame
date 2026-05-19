@@ -197,6 +197,7 @@ export function AdminScreen() {
   const [editingBdayId, setEditingBdayId] = useState<string | null>(null)
   const [bdayName, setBdayName]   = useState('')
   const [bdayDate, setBdayDate]   = useState('')
+  const [bdayCalendar, setBdayCalendar] = useState<'gregorian' | 'hebrew'>('gregorian')
   const [bdayErrors, setBdayErrors] = useState({ name: false, date: false })
 
   // Bienvenida
@@ -379,6 +380,7 @@ export function AdminScreen() {
     setEditingBdayId(null)
     setBdayName('')
     setBdayDate('')
+    setBdayCalendar('gregorian')
     setBdayErrors({ name: false, date: false })
     setBdayForm(true)
   }
@@ -387,6 +389,7 @@ export function AdminScreen() {
     setEditingBdayId(bday.id)
     setBdayName(bday.name)
     setBdayDate(bday.date)
+    setBdayCalendar(bday.calendar)
     setBdayErrors({ name: false, date: false })
     setBdayForm(true)
   }
@@ -408,7 +411,7 @@ export function AdminScreen() {
     if (editingBdayId !== null) {
       updated = birthdays.map((b) =>
         b.id === editingBdayId
-          ? { ...b, name: bdayName.trim(), date: bdayDate.trim() }
+          ? { ...b, name: bdayName.trim(), date: bdayDate.trim(), calendar: bdayCalendar }
           : b
       )
     } else {
@@ -416,6 +419,7 @@ export function AdminScreen() {
         id:   crypto.randomUUID(),
         name: bdayName.trim(),
         date: bdayDate.trim(),
+        calendar: bdayCalendar,
       }]
     }
 
@@ -428,7 +432,7 @@ export function AdminScreen() {
     } catch {
       showToast('Error al guardar', SEPIA)
     }
-  }, [bdayName, bdayDate, editingBdayId, birthdays, setBirthdays])
+  }, [bdayName, bdayDate, bdayCalendar, editingBdayId, birthdays, setBirthdays])
 
   const handleDeleteBirthday = useCallback(async (id: string) => {
     if (!window.confirm('¿Eliminar este cumpleaños?')) return
@@ -699,7 +703,17 @@ export function AdminScreen() {
           {birthdays.map((b) => (
             <div key={b.id} style={itemRowStyle} data-testid={`bday-item-${b.id}`}>
               <div style={itemTextStyle}>
-                <div style={{ fontWeight: 500 }}>{b.name}</div>
+                <div style={{ fontWeight: 500 }}>
+                  {b.name}
+                  {b.calendar === 'hebrew' && (
+                    <span
+                      data-testid={`bday-hebrew-symbol-${b.id}`}
+                      style={{ color: AMBER, opacity: 0.6, fontSize: '14px', marginLeft: '8px' }}
+                    >
+                      ✡
+                    </span>
+                  )}
+                </div>
                 <div style={{ opacity: 0.75, fontSize: '14px' }}>{b.date}</div>
               </div>
               <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
@@ -736,6 +750,43 @@ export function AdminScreen() {
                 onChange={(e) => { setBdayDate(e.target.value); setBdayErrors((prev) => ({ ...prev, date: false })) }}
                 data-testid="input-bday-date"
               />
+              <div data-testid="bday-calendar-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <label style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: CREAM, opacity: 0.8 }}>
+                  Calendario para cumpleaños anuales
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'row', gap: '24px', alignItems: 'center' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '48px', cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 500, color: CREAM }}>
+                    <input
+                      type="radio"
+                      name="bday-calendar"
+                      value="gregorian"
+                      checked={bdayCalendar === 'gregorian'}
+                      onChange={() => setBdayCalendar('gregorian')}
+                      data-testid="radio-cal-gregorian"
+                    />
+                    Gregoriano
+                  </label>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '48px', cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 500, color: CREAM }}>
+                    <input
+                      type="radio"
+                      name="bday-calendar"
+                      value="hebrew"
+                      checked={bdayCalendar === 'hebrew'}
+                      onChange={() => setBdayCalendar('hebrew')}
+                      data-testid="radio-cal-hebrew"
+                    />
+                    Hebreo
+                  </label>
+                </div>
+                {bdayCalendar === 'hebrew' && (
+                  <p
+                    data-testid="bday-cal-hint"
+                    style={{ fontFamily: "'Inter', sans-serif", fontSize: '13px', fontWeight: 300, color: SEPIA, lineHeight: 1.5, marginTop: '8px', maxWidth: '480px', margin: '8px 0 0 0' }}
+                  >
+                    El cumpleaños se mostrará en su fecha hebrea cada año (puede caer en distintas fechas gregorianas)
+                  </p>
+                )}
+              </div>
               <div>
                 <button style={primaryBtnStyle} onClick={handleSaveBirthday} data-testid="btn-save-bday">
                   Guardar

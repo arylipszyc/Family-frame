@@ -65,7 +65,7 @@ beforeEach(() => {
   useContentStore.setState({
     photos: [],
     yiddishPhrases: [{ yiddish: 'שלום', transliteration: 'Shalom', spanish: 'Paz' }],
-    birthdays: [{ id: 'b-1', name: 'Abel', date: '1948-03-15' }],
+    birthdays: [{ id: 'b-1', name: 'Abel', date: '1948-03-15', calendar: 'gregorian' }],
     welcomeConfig: { photoPath: '', message: 'Mensaje actual', authorName: 'Tus hijos' },
   })
   useAdminStore.setState({ isAuthenticated: true })
@@ -290,6 +290,64 @@ describe('AdminScreen — Cumpleaños: CRUD', () => {
     fireEvent.click(getByTestId('bday-edit-b-1'))
     expect((getByTestId('input-bday-name') as HTMLInputElement).value).toBe('Abel')
     expect((getByTestId('input-bday-date') as HTMLInputElement).value).toBe('1948-03-15')
+  })
+
+  it('crear nuevo cumpleaños defaultea calendar a gregorian y oculta hint', () => {
+    const { getByTestId, queryByTestId } = render(<AdminScreen />)
+    fireEvent.click(getByTestId('btn-add-bday'))
+    expect((getByTestId('radio-cal-gregorian') as HTMLInputElement).checked).toBe(true)
+    expect((getByTestId('radio-cal-hebrew') as HTMLInputElement).checked).toBe(false)
+    expect(queryByTestId('bday-cal-hint')).toBeNull()
+  })
+
+  it('seleccionar radio Hebreo muestra el hint condicional', () => {
+    const { getByTestId } = render(<AdminScreen />)
+    fireEvent.click(getByTestId('btn-add-bday'))
+    fireEvent.click(getByTestId('radio-cal-hebrew'))
+    expect((getByTestId('radio-cal-hebrew') as HTMLInputElement).checked).toBe(true)
+    expect(getByTestId('bday-cal-hint').textContent).toContain('fecha hebrea')
+  })
+
+  it('guarda cumpleaños con calendar: hebrew cuando se selecciona el radio', async () => {
+    const { getByTestId } = render(<AdminScreen />)
+    fireEvent.click(getByTestId('btn-add-bday'))
+    fireEvent.change(getByTestId('input-bday-name'), { target: { value: 'Haim' } })
+    fireEvent.change(getByTestId('input-bday-date'), { target: { value: '1990-05-29' } })
+    fireEvent.click(getByTestId('radio-cal-hebrew'))
+    fireEvent.click(getByTestId('btn-save-bday'))
+
+    await waitFor(() => expect(mockAdminContent.saveBirthdays).toHaveBeenCalledOnce())
+    const saved = mockAdminContent.saveBirthdays.mock.calls[0][0]
+    expect(saved[1].name).toBe('Haim')
+    expect(saved[1].calendar).toBe('hebrew')
+  })
+
+  it('lista muestra símbolo ✡ para cumpleaños hebreos y no para gregorianos', () => {
+    useContentStore.setState({
+      photos: [],
+      yiddishPhrases: [{ yiddish: 'שלום', transliteration: 'Shalom', spanish: 'Paz' }],
+      birthdays: [
+        { id: 'b-1', name: 'Abel', date: '1948-03-15', calendar: 'gregorian' },
+        { id: 'b-2', name: 'Haim', date: '1990-05-29', calendar: 'hebrew' },
+      ],
+      welcomeConfig: { photoPath: '', message: 'Mensaje actual', authorName: 'Tus hijos' },
+    })
+    const { getByTestId, queryByTestId } = render(<AdminScreen />)
+    expect(queryByTestId('bday-hebrew-symbol-b-1')).toBeNull()
+    expect(getByTestId('bday-hebrew-symbol-b-2').textContent).toBe('✡')
+  })
+
+  it('precarga radio Hebreo al editar un cumpleaños hebreo', () => {
+    useContentStore.setState({
+      photos: [],
+      yiddishPhrases: [{ yiddish: 'שלום', transliteration: 'Shalom', spanish: 'Paz' }],
+      birthdays: [{ id: 'b-h', name: 'Haim', date: '1990-05-29', calendar: 'hebrew' }],
+      welcomeConfig: { photoPath: '', message: 'Mensaje actual', authorName: 'Tus hijos' },
+    })
+    const { getByTestId } = render(<AdminScreen />)
+    fireEvent.click(getByTestId('bday-edit-b-h'))
+    expect((getByTestId('radio-cal-hebrew') as HTMLInputElement).checked).toBe(true)
+    expect(getByTestId('bday-cal-hint')).toBeDefined()
   })
 })
 

@@ -60,12 +60,33 @@ describe('adminContentService — yiddishPhrases', () => {
 describe('adminContentService — birthdays', () => {
   it('guarda y recupera cumpleaños correctamente', async () => {
     const birthdays = [
-      { id: 'abc-1', name: 'Abel', date: '1948-03-15' },
-      { id: 'abc-2', name: 'Liliana', date: '1950-07-22' },
+      { id: 'abc-1', name: 'Abel',    date: '1948-03-15', calendar: 'gregorian' as const },
+      { id: 'abc-2', name: 'Liliana', date: '1950-07-22', calendar: 'gregorian' as const },
     ]
     await adminContentService.saveBirthdays(birthdays)
     const loaded = await adminContentService.loadBirthdays()
     expect(loaded).toEqual(birthdays)
+  })
+
+  it('migra entries pre-existentes sin field calendar a gregorian por default', async () => {
+    // Pre-Epic-7 entries persistidos sin el field `calendar`
+    mockPreferences._store['birthdays'] = JSON.stringify([
+      { id: 'old-1', name: 'Abel',    date: '1948-03-15' },
+      { id: 'old-2', name: 'Liliana', date: '1950-07-22' },
+    ])
+    const loaded = await adminContentService.loadBirthdays()
+    expect(loaded).toEqual([
+      { id: 'old-1', name: 'Abel',    date: '1948-03-15', calendar: 'gregorian' },
+      { id: 'old-2', name: 'Liliana', date: '1950-07-22', calendar: 'gregorian' },
+    ])
+  })
+
+  it('preserva field calendar=hebrew si ya existe en el storage', async () => {
+    mockPreferences._store['birthdays'] = JSON.stringify([
+      { id: 'h-1', name: 'Haim', date: '1990-05-29', calendar: 'hebrew' },
+    ])
+    const loaded = await adminContentService.loadBirthdays()
+    expect(loaded?.[0].calendar).toBe('hebrew')
   })
 
   it('retorna null cuando no hay cumpleaños almacenados', async () => {

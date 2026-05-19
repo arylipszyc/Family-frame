@@ -18,6 +18,7 @@
     "@capacitor/network": "^8.0.1",
     "@capacitor/preferences": "^8.0.1",
     "@capgo/capacitor-android-kiosk": "^8.2.0",
+    "@hebcal/hdate": "^0.22.2",
     "bcryptjs": "^3.0.3",
     "jose": "^6.2.3",
     "react": "^19.0.0",

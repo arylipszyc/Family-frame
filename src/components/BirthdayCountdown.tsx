@@ -1,5 +1,6 @@
 import type { CSSProperties } from 'react'
 import type { Birthday } from '../types/Birthday'
+import { calculateNextBirthday } from '../utils/birthdayCalendar'
 
 interface BirthdayCountdownProps {
   birthdays: Birthday[]
@@ -8,19 +9,6 @@ interface BirthdayCountdownProps {
 
 interface UpcomingBirthday extends Birthday {
   daysUntil: number
-}
-
-function daysUntilNextBirthday(birthdayDate: string): number {
-  const [, month, day] = birthdayDate.split('-').map(Number)
-  const now = new Date()
-  const todayMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-
-  const thisYear = new Date(now.getFullYear(), month - 1, day)
-  const diffThis = Math.round((thisYear.getTime() - todayMidnight.getTime()) / 86_400_000)
-  if (diffThis >= 0) return diffThis
-
-  const nextYear = new Date(now.getFullYear() + 1, month - 1, day)
-  return Math.round((nextYear.getTime() - todayMidnight.getTime()) / 86_400_000)
 }
 
 function BirthdayRow({ entry }: { entry: UpcomingBirthday }) {
@@ -39,7 +27,7 @@ function BirthdayRow({ entry }: { entry: UpcomingBirthday }) {
 
 export function BirthdayCountdown({ birthdays, rotationSlot }: BirthdayCountdownProps) {
   const upcoming: UpcomingBirthday[] = birthdays
-    .map(b => ({ ...b, daysUntil: daysUntilNextBirthday(b.date) }))
+    .map(b => ({ ...b, daysUntil: calculateNextBirthday(b).daysUntil }))
     .filter(b => b.daysUntil <= 30)
     .sort((a, b) => a.daysUntil - b.daysUntil)
 
