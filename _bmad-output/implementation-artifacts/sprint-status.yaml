@@ -1,8 +1,8 @@
 project: family-frame
-generated_at: '2026-05-16'
+generated_at: '2026-05-18'
 generated_by: moishe
-deadline: '2026-05-19'
-days_to_deadline: 3
+deadline: '2026-05-25'  # corrido del 2026-05-19 por owner 2026-05-18 para incluir rediseño UX
+days_to_deadline: 7
 
 summary:
   total_stories: 25
@@ -18,8 +18,9 @@ phases:
   planning: complete
   implementation_code: complete
   implementation_documentation: drift
-  hardware_validation: validated  # 4.6 + Drive sync + rotación + objectFit + cache recursive fix — todo 2026-05-16
+  hardware_validation: validated  # 4.6 + Drive sync + rotación + objectFit + cache recursive fix — 2026-05-16. GAP-6 (OOM > 20MB) fixeado y revalidado 2026-05-18.
   packaging: not_started
+  ux_redesign: planned  # NS-8 expandido 2026-05-18: layout split + calendario hebreo + reloj análogo. Sally arranca 2026-05-19.
 
 epics:
   epic_1:
@@ -126,6 +127,21 @@ risks_and_gaps:
     detail: Al primer boot, la pantalla queda apagada hasta que se toque la pantalla — aún con WAKE_LOCK adquirido en MainActivity.onCreate. Owner aceptó como no-bloqueante 2026-04-27.
     resolution_notes: Si en el futuro se quiere fixear, parche estimado en MainActivity.java — `setTurnScreenOn(true)` + `setShowWhenLocked(true)` + `FLAG_KEEP_SCREEN_ON`. Va a Amelia con coord file.
 
+  - id: GAP-6
+    severity: closed
+    title: APK crash loop por OOM en Capacitor bridge con foto > 20MB
+    detail: |
+      Stress test 2026-05-17/18 reveló crash loop. 3 FATAL EXCEPTION idénticos en logcat
+      (PIDs 7845, 9245, 9632) — todos OutOfMemoryError tratando de alocar 177577024 bytes
+      en MessageHandler.postMessage → JSONTokener al guardar una foto. Causa raíz:
+      photoCacheService.savePhoto convierte blob → base64 y lo manda como JSON al bridge;
+      la JVM tiene heap 256MB y el base64 de ~127MB binarios excede el límite.
+      Owner identificó 2 archivos > 20MB en el folder Drive y los borró manualmente.
+    resolution: |
+      Cerrado 2026-05-18 — fix(drive-sync) commit f674f06: filtro > 20MB en query Drive
+      con console.warn. Validado en hardware: APK firmado, instalado, app estable.
+      Proper fix (Filesystem.downloadFile streaming sin bridge) deferred — ver deferred-work.md.
+
 next_steps:
   recommended_order:
     - id: NS-1
@@ -151,13 +167,24 @@ next_steps:
       action: Stress test 24-48h (boot, WAKE_LOCK, night mode, kiosk, sync periódico Drive)
       why: Detectar drift antes del deadline
       effort: pasivo, 2 días
-      status: in_progress  # arrancado 2026-05-16 ~19:00, tablet enchufada con kiosk activo + WiFi
+      status: done  # arrancado 2026-05-16 ~19:00. Detectó GAP-6 (OOM por foto > 20MB) — fixeado 2026-05-18.
     - id: NS-7
       action: Empaquetado físico (marco de madera + tablet)
       why: Entregar el regalo
       effort: depende de Ary y artesano
     - id: NS-8
-      action: Sesión de rediseño visual con Sally → Amelia (layout split foto/panel, fonts, reloj, próximos cumpleaños)
-      why: Pedido owner 2026-05-16 — versión actual funcional pero sin pulido visual
-      effort: 4-6h (Sally mockup + Amelia impl + iteración)
-      blockers: ninguno técnico, depende de capacidad de Ary post-stress test
+      action: Sesión de rediseño visual con Sally → Amelia
+      why: Pedido owner 2026-05-16, expandido 2026-05-18. Versión actual funcional pero sin pulido visual.
+      scope: |
+        (a) Layout split: fotos a la izquierda, panel a la derecha (sobre el espacio negro actual)
+        (b) Cumpleaños en el panel derecho
+        (c) Soporte calendario hebreo: opción por cumpleaños de elegir gregoriano o hebreo
+        (d) Reloj análogo semi-transparente, ocupando más espacio en pantalla
+      effort: 8-12h total — Sally specs (2-3h) + Amelia impl como epic con 4 stories (~6-9h) + hardware test
+      blockers: ninguno técnico
+      planned_start: 2026-05-19  # owner arranca con Sally mañana
+    - id: NS-9
+      action: Deferred work — reemplazar base64 bridge por Filesystem.downloadFile streaming
+      why: Fix proper de GAP-6 (el filtro > 20MB es un workaround, la causa raíz sigue presente)
+      effort: ~30 líneas en photoCacheService + driveSyncService + tests
+      blockers: post-regalo
