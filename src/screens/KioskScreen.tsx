@@ -28,7 +28,7 @@ const rootContainerStyle: CSSProperties = {
   overflow: 'hidden',
   display: 'flex',
   flexDirection: 'row',
-  background: 'linear-gradient(to bottom, #1A1210, #1F1813)',
+  background: '#000000',
   WebkitTapHighlightColor: 'transparent',
   userSelect: 'none',
 }
@@ -42,6 +42,17 @@ const photoZoneStyle: CSSProperties = {
 const sidePanelStyle: CSSProperties = {
   width: '22%',
   height: '100%',
+}
+
+// Linen paper overlay — tinta uniforme cream sobre PhotoZone + SidePanel.
+// Live a nivel root entre las zonas y los text overlays. Sin zIndex explícito:
+// orden DOM determina stacking → tinta foto + panel, pero date/birthday/yiddish
+// (que vienen después o tienen zIndex propio) quedan sin tintar.
+const linenOverlayStyle: CSSProperties = {
+  position: 'absolute',
+  inset: 0,
+  backgroundColor: 'rgba(245, 235, 210, 0.06)',
+  pointerEvents: 'none',
 }
 
 function randomShift(): number {
@@ -123,6 +134,7 @@ export function KioskScreen() {
         <YiddishPhrase phrases={yiddishPhrases} />
       </div>
       <div style={sidePanelStyle} />
+      <div style={linenOverlayStyle} />
       <DateDisplay />
       <BirthdayCountdown birthdays={birthdays} rotationSlot={rotationSlot} />
       <NightModeOverlay />

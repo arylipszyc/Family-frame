@@ -101,6 +101,30 @@ context:
 
 **Pending action:** Surface deviation to Sally retrospectively when she next audits Epic 7.
 
+### 2026-05-19 — Hardware-validation fix: linen overlay movido al root (cubre ambas zonas)
+
+**Triggering finding:** Validación visual en hardware (tablet) reveló cambio de color visible en la frontera 78/22 — PhotoZone se veía más cream/clara que SidePanel. Causa: el paper overlay linen 6% estaba aplicado dentro del PhotoSlide (solo tinta PhotoZone), no en SidePanel. Sally explícitamente pidió `paper texture overlay (consistente con la foto zone)` para ambas zonas — me lo pasé por alto.
+
+**What was amended:** El overlay se removió del PhotoSlide y se agregó como `<div style={linenOverlayStyle}>` al root del KioskScreen, entre `sidePanel` y los text overlays. Sin zIndex explícito → orden DOM determina stacking. Tinta PhotoZone + SidePanel uniformemente. DateDisplay / BirthdayCountdown (renderizados después en DOM) no se tintan.
+
+**Known-bad state avoided:** Línea divisoria visible entre PhotoZone y SidePanel cuando la foto deja banda warm-dark a la derecha.
+
+**KEEP:** Cualquier overlay decorativo que deba aplicarse a TODO el frame debe estar a nivel root del KioskScreen, no dentro de PhotoSlide. Si Story 7.2+ agregan overlays similares (texturas, gradientes adicionales), aplicar el mismo patrón.
+
+### 2026-05-19 — Owner-driven UX pivot post-hardware: gradient → pure black
+
+**Triggering finding:** Validación visual en hardware (tablet montada para el contexto regalo). Ary observó que el gradiente warm-dark `#1A1210 → #1F1813` no se "mimetiza" con el bezel negro de la tablet ni con el marco de madera que lo rodea — el warm-dark stand-out como "shadow of the tablet" en vez de "extensión del marco". El mat negro clásico de fotografía + el bezel negro real crean continuidad visual mejor.
+
+**What was amended:** El `background` del `rootContainerStyle` pasó de `linear-gradient(to bottom, #1A1210, #1F1813)` a `'#000000'` (negro puro). Linen overlay 6% sigue activo encima — aporta textura sutil sin agregar warmth perceptible.
+
+**Known-bad state avoided:** Discontinuidad visual entre el contenido del kiosk y el contexto físico del marco. El "passe-partout cálido" que Sally diseñó era válido en abstracto pero no funcionó en el contexto físico real (marco madera + tablet bezel).
+
+**Owner rationale (Ary, 2026-05-19, post-hardware):** "Que sea todo más negro, así las franjas se mimetizan con el borde del tablet."
+
+**KEEP:** Cuando una decisión de UX descansa sobre un contexto físico (display específico, montaje, iluminación), la validación en hardware es autoritativa sobre el spec abstracto. Sally diseñó sin acceso al frame real; Ary ajustó con el frame en mano. Si futuras decisiones de color enfrentan tensión similar (Story 7.5 reloj, ornamentos), priorizar tablet visual sobre browser/spec.
+
+**Pending action:** Surface deviation a Sally retrospectivamente. El epic context y el UX spec siguen documentando los colores originales — actualizar si Sally aprueba el cambio.
+
 ### 2026-05-19 — Out-of-scope addition: dev-only `testPhotos` seed in contentStore
 
 **Triggering finding:** Acceptance auditor flagged `src/dev/testPhotos.ts` + `contentStore` modification + `.gitignore` change as unscoped (not in the spec).

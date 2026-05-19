@@ -156,7 +156,6 @@ export function PhotoSlide({ photos, intervalMs = DEFAULT_INTERVAL_MS }: PhotoSl
           onError={() => setErrored(prev => new Set([...prev, curIdxRef.current]))}
         />
       )}
-      <div style={overlayStyle} />
     </div>
   )
 }
@@ -193,10 +192,3 @@ const imgBaseStyle: CSSProperties = {
   filter: 'saturate(0.85) brightness(0.95) sepia(0.08)',
 }
 
-const overlayStyle: CSSProperties = {
-  position: 'absolute',
-  inset: 0,
-  backgroundColor: 'rgba(245, 235, 210, 0.06)',
-  zIndex: 3,
-  pointerEvents: 'none',
-}
