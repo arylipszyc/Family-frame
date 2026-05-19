@@ -35,18 +35,12 @@ export function DateDisplay() {
 }
 
 const dateStyle: CSSProperties = {
-  position: 'absolute',
-  top: '2.5vh',
-  right: '2.5vw',
   fontFamily: "'Inter', sans-serif",
-  fontSize: 'clamp(22px, 2.5vw, 32px)',
+  fontSize: '24px',
   fontWeight: 300,
   lineHeight: 1.4,
   color: '#F5F0E8',
   opacity: 0.7,
-  textShadow: '0 1px 8px rgba(0,0,0,0.6)',
-  textAlign: 'right',
+  textAlign: 'left',
   margin: 0,
-  WebkitTapHighlightColor: 'transparent',
-  userSelect: 'none',
 }

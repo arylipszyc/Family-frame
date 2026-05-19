@@ -23,20 +23,17 @@ function daysUntilNextBirthday(birthdayDate: string): number {
   return Math.round((nextYear.getTime() - todayMidnight.getTime()) / 86_400_000)
 }
 
-function BirthdayLine({ entry }: { entry: UpcomingBirthday }) {
-  if (entry.daysUntil === 0) {
-    return (
-      <p style={birthdayStyle}>
-        {'🎂 Hoy: cumpleaños de '}
-        <span style={{ color: '#C8956C' }}>{entry.name}</span>
-      </p>
-    )
-  }
+function BirthdayRow({ entry }: { entry: UpcomingBirthday }) {
   const days = entry.daysUntil
+  const daysLabel = days === 0
+    ? '🎂 Hoy'
+    : `En ${days} día${days === 1 ? '' : 's'}`
+
   return (
-    <p style={birthdayStyle}>
-      {`En ${days} día${days === 1 ? '' : 's'}: cumpleaños de ${entry.name}`}
-    </p>
+    <div style={rowStyle}>
+      <span style={nameStyle}>{entry.name}</span>
+      <span style={daysStyle}>{daysLabel}</span>
+    </div>
   )
 }
 
@@ -60,28 +57,53 @@ export function BirthdayCountdown({ birthdays, rotationSlot }: BirthdayCountdown
 
   return (
     <div style={containerStyle}>
-      <BirthdayLine entry={slot1} />
-      {slot2 !== undefined && <BirthdayLine entry={slot2} />}
+      <p style={titleStyle}>Próximos cumpleaños</p>
+      <BirthdayRow entry={slot1} />
+      {slot2 !== undefined && <BirthdayRow entry={slot2} />}
     </div>
   )
 }
 
 const containerStyle: CSSProperties = {
-  position: 'absolute',
-  bottom: '2.5vh',
-  right: '2.5vw',
-  textAlign: 'right',
-  WebkitTapHighlightColor: 'transparent',
-  userSelect: 'none',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '14px',
 }
 
-const birthdayStyle: CSSProperties = {
+const titleStyle: CSSProperties = {
   fontFamily: "'Inter', sans-serif",
-  fontSize: 'clamp(28px, 3vw, 42px)',
-  fontWeight: 500,
-  lineHeight: 1.3,
+  fontSize: '20px',
+  fontWeight: 400,
+  lineHeight: 1.2,
   color: '#F5F0E8',
-  textShadow: '0 2px 16px rgba(0,0,0,0.7), 0 1px 4px rgba(0,0,0,0.5)',
+  opacity: 0.5,
+  letterSpacing: '0.5px',
   margin: 0,
   marginBottom: '6px',
+}
+
+const rowStyle: CSSProperties = {
+  display: 'flex',
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'baseline',
+  gap: '16px',
+}
+
+const nameStyle: CSSProperties = {
+  fontFamily: "'Inter', sans-serif",
+  fontSize: '32px',
+  fontWeight: 500,
+  lineHeight: 1.2,
+  color: '#C8956C',
+}
+
+const daysStyle: CSSProperties = {
+  fontFamily: "'Inter', sans-serif",
+  fontSize: '26px',
+  fontWeight: 300,
+  lineHeight: 1.2,
+  color: '#F5F0E8',
+  opacity: 0.85,
+  whiteSpace: 'nowrap',
 }

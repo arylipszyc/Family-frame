@@ -42,12 +42,35 @@ const photoZoneStyle: CSSProperties = {
 const sidePanelStyle: CSSProperties = {
   width: '22%',
   height: '100%',
+  padding: '80px 32px 68px 32px',
+  display: 'flex',
+  flexDirection: 'column',
+  gap: '56px',
+  boxSizing: 'border-box',
+  overflow: 'hidden',
+}
+
+const clockZoneStyle: CSSProperties = {
+  height: '320px',
+  flexShrink: 0,
+}
+
+const birthdayZoneStyle: CSSProperties = {
+  height: '380px',
+  flexShrink: 0,
+  overflow: 'hidden',
+}
+
+const dateZoneStyle: CSSProperties = {
+  height: '120px',
+  flexShrink: 0,
 }
 
 // Linen paper overlay — tinta uniforme cream sobre PhotoZone + SidePanel.
-// Live a nivel root entre las zonas y los text overlays. Sin zIndex explícito:
-// orden DOM determina stacking → tinta foto + panel, pero date/birthday/yiddish
-// (que vienen después o tienen zIndex propio) quedan sin tintar.
+// Live a nivel root entre las zonas y los overlays exteriores (NightMode/Gesture/Pin).
+// Tinta photoZone (foto + YiddishPhrase) y sidePanel (clock/birthday/date zones)
+// porque ambas zonas vienen antes en DOM. El tint sobre los textos del panel es
+// 6% cream → cambio sub-perceptual; aceptado en Story 7.2 (ver Spec Change Log).
 const linenOverlayStyle: CSSProperties = {
   position: 'absolute',
   inset: 0,
@@ -133,10 +156,16 @@ export function KioskScreen() {
         <PhotoSlide photos={photos} intervalMs={photoRotationInterval} />
         <YiddishPhrase phrases={yiddishPhrases} />
       </div>
-      <div style={sidePanelStyle} />
+      <div style={sidePanelStyle}>
+        <div style={clockZoneStyle} />
+        <div style={birthdayZoneStyle}>
+          <BirthdayCountdown birthdays={birthdays} rotationSlot={rotationSlot} />
+        </div>
+        <div style={dateZoneStyle}>
+          <DateDisplay />
+        </div>
+      </div>
       <div style={linenOverlayStyle} />
-      <DateDisplay />
-      <BirthdayCountdown birthdays={birthdays} rotationSlot={rotationSlot} />
       <NightModeOverlay />
       <GestureDetector onGestureDetected={handleGestureDetected} />
       <PinEntry
