@@ -46,6 +46,9 @@ android/capacitor.settings.gradle
 # Tooling artifacts
 .playwright-mcp/
 
+# Dev-only test photos (seeded in contentStore when DEV=true)
+public/test-photos/
+
 # Environment — all variants
 .env
 .env.local

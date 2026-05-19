@@ -3,6 +3,7 @@ import type { Photo } from '../types/Photo'
 import type { YiddishPhrase } from '../types/YiddishPhrase'
 import type { Birthday } from '../types/Birthday'
 import yiddishData from '../data/yiddish.json'
+import { testPhotos } from '../dev/testPhotos'
 
 export interface WelcomeConfig {
   photoPath: string
@@ -22,7 +23,7 @@ interface ContentState {
 }
 
 export const useContentStore = create<ContentState>()((set) => ({
-  photos: [],
+  photos: import.meta.env.DEV ? testPhotos : [],
   yiddishPhrases: yiddishData,
   birthdays: [],
   welcomeConfig: { photoPath: '', message: '', authorName: '' },

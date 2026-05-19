@@ -17,7 +17,8 @@ import { CapacitorAndroidKiosk } from '@capgo/capacitor-android-kiosk'
 
 const PIXEL_SHIFT_INTERVAL_MS = 180_000  // 3 minutos
 
-// Container extendido 3px más allá del viewport — previene borde negro en shifts ±2px
+// Container extendido 3px más allá del viewport — previene borde negro en shifts ±2px.
+// Gradiente warm-dark unificado en el root: PhotoZone y SidePanel heredan sin línea divisoria.
 const rootContainerStyle: CSSProperties = {
   position: 'fixed',
   top: '-3px',
@@ -25,6 +26,22 @@ const rootContainerStyle: CSSProperties = {
   bottom: '-3px',
   left: '-3px',
   overflow: 'hidden',
+  display: 'flex',
+  flexDirection: 'row',
+  background: 'linear-gradient(to bottom, #1A1210, #1F1813)',
+  WebkitTapHighlightColor: 'transparent',
+  userSelect: 'none',
+}
+
+const photoZoneStyle: CSSProperties = {
+  width: '78%',
+  height: '100%',
+  position: 'relative',
+}
+
+const sidePanelStyle: CSSProperties = {
+  width: '22%',
+  height: '100%',
 }
 
 function randomShift(): number {
@@ -46,10 +63,8 @@ export function KioskScreen() {
   const [showPin, setShowPin] = useState(false)
   const [pinShaking, setPinShaking] = useState(false)
   const [pinResetKey, setPinResetKey] = useState(0)
-  // Ref para evitar stale closure en handlePinComplete (P1)
   const pinAttemptsRef = useRef(0)
 
-  // AC1/AC2/AC3: activar kiosk mode al montar KioskScreen
   useEffect(() => {
     void CapacitorAndroidKiosk.enterKioskMode({ restoreAfterReboot: true, relaunch: true }).catch(() => {
       // Silencioso en web/browser — el plugin solo funciona en Android nativo
@@ -76,7 +91,6 @@ export function KioskScreen() {
       const correct = await pinService.verifyPin(pin)
 
       if (correct) {
-        // Fade out modal (0.5s via opacity transition), luego navegar a admin
         setShowPin(false)
         setTimeout(() => {
           setAuthenticated(true)
@@ -85,31 +99,30 @@ export function KioskScreen() {
         return
       }
 
-      // PIN incorrecto — incrementar via ref (sin stale closure)
       const nextAttempts = pinAttemptsRef.current + 1
       pinAttemptsRef.current = nextAttempts
 
       if (nextAttempts >= 3) {
-        // 3 intentos fallidos — cerrar silenciosamente, sin shake (AC5)
         setShowPin(false)
         pinAttemptsRef.current = 0
         return
       }
 
-      // Shake solo si no es el intento de lockout (AC4)
       setPinShaking(true)
       setPinResetKey(k => k + 1)
       setTimeout(() => setPinShaking(false), 450)
     } catch {
-      // fallo silencioso — cerrar modal si storage no responde
       setShowPin(false)
     }
   }, [setAuthenticated, setMode])
 
   return (
     <div style={{ ...rootContainerStyle, transform: `translate(${shiftX}px, ${shiftY}px)` }}>
-      <PhotoSlide photos={photos} intervalMs={photoRotationInterval} />
-      <YiddishPhrase phrases={yiddishPhrases} />
+      <div style={photoZoneStyle}>
+        <PhotoSlide photos={photos} intervalMs={photoRotationInterval} />
+        <YiddishPhrase phrases={yiddishPhrases} />
+      </div>
+      <div style={sidePanelStyle} />
       <DateDisplay />
       <BirthdayCountdown birthdays={birthdays} rotationSlot={rotationSlot} />
       <NightModeOverlay />
