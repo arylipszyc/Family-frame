@@ -25,7 +25,7 @@ import { driveSyncService } from '../../services/driveSyncService'
 import { useSyncStore }     from '../../stores/syncStore'
 import { useContentStore }  from '../../stores/contentStore'
 
-function mockListResponse(files: Array<{ id: string; name?: string }>, nextPageToken?: string) {
+function mockListResponse(files: Array<{ id: string; name?: string; size?: string }>, nextPageToken?: string) {
   mockFetch.mockResolvedValueOnce({
     ok:   true,
     json: vi.fn().mockResolvedValue({
@@ -34,6 +34,7 @@ function mockListResponse(files: Array<{ id: string; name?: string }>, nextPageT
         name:         f.name ?? `${f.id}.jpg`,
         mimeType:     'image/jpeg',
         modifiedTime: '2026-05-16T10:00:00Z',
+        ...(f.size !== undefined ? { size: f.size } : {}),
       })),
       ...(nextPageToken ? { nextPageToken } : {}),
     }),
@@ -135,6 +136,29 @@ describe('driveSyncService', () => {
     expect(count).toBe(1)
     expect(mockPhotoCache.savePhoto).toHaveBeenCalledOnce()
     expect(mockPhotoCache.savePhoto).toHaveBeenCalledWith('file-new', expect.any(Blob))
+  })
+
+  it('skips files larger than 20MB with a console warning (Capacitor bridge OOM guard)', async () => {
+    const TWENTY_MB = 20 * 1024 * 1024
+    mockListResponse([
+      { id: 'small',  name: 'small.jpg',  size: String(5 * 1024 * 1024) },
+      { id: 'big',    name: 'huge.jpg',   size: String(TWENTY_MB + 1) },
+      { id: 'nosize', name: 'nosize.jpg' },
+    ])
+    mockDownload()
+    mockDownload()
+    mockPhotoCache.getAllCachedPhotos.mockResolvedValueOnce([])
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+
+    const count = await driveSyncService.sync()
+
+    expect(count).toBe(2)
+    expect(mockPhotoCache.savePhoto).toHaveBeenCalledTimes(2)
+    expect(mockPhotoCache.savePhoto).toHaveBeenCalledWith('small',  expect.any(Blob))
+    expect(mockPhotoCache.savePhoto).toHaveBeenCalledWith('nosize', expect.any(Blob))
+    expect(mockPhotoCache.savePhoto).not.toHaveBeenCalledWith('big', expect.any(Blob))
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('huge.jpg'))
+    warnSpy.mockRestore()
   })
 
   it('does nothing when no new files, returns 0', async () => {
