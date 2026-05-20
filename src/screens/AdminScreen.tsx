@@ -485,7 +485,7 @@ export function AdminScreen() {
   const handleSaveConfig = useCallback(async () => {
     const secs = parseInt(intervalInput, 10)
     const errors = {
-      interval:   isNaN(secs) || secs < 10 || secs > 300,
+      interval:   isNaN(secs) || secs < 10 || secs > 86400,
       nightStart: !HH_MM_REGEX.test(nightStartInput),
       nightEnd:   !HH_MM_REGEX.test(nightEndInput),
     }
@@ -901,13 +901,13 @@ export function AdminScreen() {
             {/* Intervalo de rotación */}
             <div>
               <div style={{ fontSize: '16px', fontWeight: 500, marginBottom: '6px' }}>
-                Intervalo de rotación (segundos, 10–300)
+                Intervalo de rotación (segundos, 10–86400)
               </div>
               <input
                 style={{ ...inputStyle, ...(configErrors.interval ? { border: `2px solid ${AMBER}` } : {}) }}
                 type="number"
                 min={10}
-                max={300}
+                max={86400}
                 value={intervalInput}
                 onChange={(e) => { setIntervalInput(e.target.value); setConfigErrors((prev) => ({ ...prev, interval: false })) }}
                 data-testid="input-rotation-interval"
