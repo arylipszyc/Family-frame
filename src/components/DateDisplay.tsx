@@ -36,7 +36,7 @@ export function DateDisplay() {
 
 const dateStyle: CSSProperties = {
   fontFamily: "'Inter', sans-serif",
-  fontSize: '24px',
+  fontSize: '40px',
   fontWeight: 300,
   lineHeight: 1.4,
   color: '#F5F0E8',

@@ -39,31 +39,31 @@ const photoZoneStyle: CSSProperties = {
   position: 'relative',
 }
 
+// Layout vertical del SidePanel (orden de arriba a abajo): date → clock → birthday.
+// Heights aproximados — total ~1080 con flex absorbiendo slack.
 const sidePanelStyle: CSSProperties = {
   width: '22%',
   height: '100%',
-  padding: '80px 32px 68px 32px',
+  padding: '60px 32px 60px 32px',
   display: 'flex',
   flexDirection: 'column',
-  gap: '56px',
+  gap: '40px',
   boxSizing: 'border-box',
-  overflow: 'hidden',
-}
-
-const clockZoneStyle: CSSProperties = {
-  height: '320px',
-  flexShrink: 0,
-}
-
-const birthdayZoneStyle: CSSProperties = {
-  height: '380px',
-  flexShrink: 0,
   overflow: 'hidden',
 }
 
 const dateZoneStyle: CSSProperties = {
   height: '120px',
   flexShrink: 0,
+}
+
+const birthdayZoneStyle: CSSProperties = {
+  flexGrow: 1,
+  flexShrink: 1,
+  overflow: 'hidden',
+  display: 'flex',
+  flexDirection: 'column',
+  justifyContent: 'center',
 }
 
 // Linen paper overlay — tinta uniforme cream sobre PhotoZone + SidePanel.
@@ -91,7 +91,6 @@ export function KioskScreen() {
   const setAuthenticated = useAdminStore((state) => state.setAuthenticated)
   const photoRotationInterval = useSettingsStore((s) => s.photoRotationInterval)
 
-  const [rotationSlot, setRotationSlot] = useState(0)
   const [shiftX, setShiftX] = useState(0)
   const [shiftY, setShiftY] = useState(0)
   const [showPin, setShowPin] = useState(false)
@@ -105,7 +104,6 @@ export function KioskScreen() {
     })
   }, [])
 
-  useInterval(() => setRotationSlot(s => s + 1), photoRotationInterval)
   useInterval(() => {
     setShiftX(randomShift())
     setShiftY(randomShift())
@@ -157,12 +155,11 @@ export function KioskScreen() {
         <YiddishPhrase phrases={yiddishPhrases} />
       </div>
       <div style={sidePanelStyle}>
-        <div style={clockZoneStyle} />
-        <div style={birthdayZoneStyle}>
-          <BirthdayCountdown birthdays={birthdays} rotationSlot={rotationSlot} />
-        </div>
         <div style={dateZoneStyle}>
           <DateDisplay />
+        </div>
+        <div style={birthdayZoneStyle}>
+          <BirthdayCountdown birthdays={birthdays} />
         </div>
       </div>
       <div style={linenOverlayStyle} />

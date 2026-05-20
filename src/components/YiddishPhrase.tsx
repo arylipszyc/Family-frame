@@ -22,22 +22,19 @@ function msUntilMidnight(): number {
 export function YiddishPhrase({ phrases }: YiddishPhraseProps) {
   const [dayIndex, setDayIndex] = useState(() => getDayOfYear(new Date()))
 
-  // Registra un timeout hacia la próxima medianoche.
-  // Usa un callback recursivo con deps [] para garantizar el re-armado
-  // incluso si el timeout dispara levemente antes de que cambie el día.
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>
 
     function scheduleNext() {
       timeout = setTimeout(() => {
         setDayIndex(getDayOfYear(new Date()))
-        scheduleNext()  // siempre re-arma para el día siguiente
+        scheduleNext()
       }, msUntilMidnight())
     }
 
     scheduleNext()
     return () => clearTimeout(timeout)
-  }, [])  // solo monta/desmonta — no depende de dayIndex
+  }, [])
 
   if (phrases.length === 0) return null
 
@@ -45,12 +42,9 @@ export function YiddishPhrase({ phrases }: YiddishPhraseProps) {
 
   return (
     <>
-      {/* Gradiente protector D3 — esquina inferior izquierda */}
       <div style={gradientStyle} />
-      {/* Texto de la frase */}
       <div style={containerStyle}>
         <p style={yiddishStyle}>{phrase.yiddish}</p>
-        <p style={transliterationStyle}>{phrase.transliteration}</p>
         <p style={translationStyle}>{phrase.spanish}</p>
       </div>
     </>
@@ -82,28 +76,22 @@ const textShadow = '0 2px 16px rgba(0,0,0,0.7), 0 1px 4px rgba(0,0,0,0.5)'
 
 const yiddishStyle: CSSProperties = {
   fontFamily: "'Playfair Display', serif",
-  fontSize: 'clamp(40px, 4vw, 64px)',
+  fontSize: 'clamp(56px, 5.5vw, 84px)',
   fontWeight: 400,
   lineHeight: 1.2,
   color: '#F5F0E8',
   textShadow,
   margin: 0,
-  marginBottom: '8px',
+  marginBottom: '12px',
 }
 
-const transliterationStyle: CSSProperties = {
+const translationStyle: CSSProperties = {
   fontFamily: "'Inter', sans-serif",
-  fontSize: '24px',
+  fontSize: '40px',
   fontWeight: 300,
-  lineHeight: 1.5,
+  lineHeight: 1.4,
   color: '#F5F0E8',
   opacity: 0.85,
   textShadow,
   margin: 0,
-  marginBottom: '4px',
-}
-
-const translationStyle: CSSProperties = {
-  ...transliterationStyle,
-  marginBottom: 0,
 }

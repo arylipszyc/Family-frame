@@ -1,26 +1,26 @@
 project: family-frame
-generated_at: '2026-05-18'
+generated_at: '2026-05-19'
 generated_by: moishe
 deadline: '2026-05-25'  # corrido del 2026-05-19 por owner 2026-05-18 para incluir rediseño UX
-days_to_deadline: 7
+days_to_deadline: 6
 
 summary:
-  total_stories: 25
-  done: 19
+  total_stories: 29  # 25 previos + 4 Epic 7 (7.1, 7.2, 7.3, 7.4); 7.5 descartada por owner post-hardware
+  done: 23  # 19 previos + 7.1 + 7.2 + 7.3 + 7.4
   done_undocumented: 4
   deprecated: 2
   in_progress: 0
   blocked: 0
   backlog: 0
-  pending_validation: 0  # 4.6 validada end-to-end en hardware 2026-05-16 (sa-config + drive-folder-config + bootstrap + sync real)
+  pending_validation: 0
 
 phases:
   planning: complete
-  implementation_code: complete
+  implementation_code: complete  # Epic 7 cerrado 2026-05-19; sin reloj por decisión owner
   implementation_documentation: drift
-  hardware_validation: validated  # 4.6 + Drive sync + rotación + objectFit + cache recursive fix — 2026-05-16. GAP-6 (OOM > 20MB) fixeado y revalidado 2026-05-18.
+  hardware_validation: validated  # Epic 7 validado en tablet end-to-end (split + tabla + hebrew + Haim 5 Sivan correcto). 4.6 + Drive sync revalidados previamente.
   packaging: not_started
-  ux_redesign: planned  # NS-8 expandido 2026-05-18: layout split + calendario hebreo + reloj análogo. Sally arranca 2026-05-19.
+  ux_redesign: complete  # NS-8 implementado en 4 stories + polish iterativo. Owner-driven pivots desde Sally spec documentados en Spec Change Logs (objectPosition left, gradient → negro, tabla compacta, layout date/birthday sin reloj, +30% tipografía).
 
 epics:
   epic_1:
@@ -83,11 +83,33 @@ epics:
       - { id: '6.3', file: 6-3-kiosk-mode.md, status: done }
       - { id: '6.4', file: 6-4-build-apk.md, status: done, note: 'AC1-AC4 validados en hardware 2026-04-27. AC5 parcial: app arranca sola al boot pero requiere toque para encender pantalla; aceptado como caveat conocido.' }
 
+  epic_7:
+    name: Rediseño visual del kiosk (NS-8)
+    status: done
+    note: |
+      Epic ejecutado 2026-05-19 en una sola sesión densa. Sally diseñó (UX spec NS-8 Layout
+      Redesign Addendum + 5 stories en epics.md). Amelia implementó vía bmad-quick-dev. Multiple
+      owner-driven pivots post-hardware-validation: gradient warm-dark → negro puro, object-position
+      centered → left, 3-line multilinea → tabla compacta → vertical stacked con dividers,
+      reloj análogo añadido y descartado, layout reordenado a date-top → birthday-middle,
+      tipografía bumpeada acumulativo ~+50%, Yiddish sin fonética (solo hebreo + traducción).
+      Hardware end-to-end validado: Haim 5 Sivan calc hebreo correcto, panel + foto + Yiddish OK.
+    stories:
+      - { id: '7.1', file: spec-7-1-kiosk-layout-split.md, status: done, commits: '71dcc4f + 89413d9' }
+      - { id: '7.2', file: spec-7-2-panel-birthday-date.md, status: done, commits: 'e3325d1' }
+      - { id: '7.3', file: spec-7-3-4-hebrew-calendar.md, status: done, commits: 'c24879c', note: 'unified con 7.4' }
+      - { id: '7.4', file: spec-7-3-4-hebrew-calendar.md, status: done, commits: 'c24879c', note: 'unified con 7.3' }
+      - { id: '7.5', file: null, status: discarded, reason: 'Reloj análogo implementado y luego descartado por owner post-hardware — el panel sin reloj se siente más limpio para el regalo. AnalogClock.tsx eliminado.' }
+
 tests:
   status: passing
-  count: 159
+  count: 180
   framework: vitest + jsdom
-  note: 154 previos − 1 obsoleto + 6 nuevos (incluye 22 de servicios reescritos en 4.6, descontando 16 viejos eliminados). Validación nativa Android (boot, WAKE_LOCK, kiosk lock, sync real contra Drive) pendiente en hardware (NS-4-bis).
+  note: |
+    180 = 166 previos + 14 nuevos en Epic 7 (6 PhotoSlide máquina 3-fase + 4 birthdayCalendar
+    gregorian/hebrew + 2 adminContentService migration + 2 AdminScreen radio/✡ — descontando 2
+    eliminados por refactor). Validación nativa Android (boot, WAKE_LOCK, kiosk lock, sync real
+    contra Drive, hebrew calc) validados en hardware 2026-05-19.
 
 risks_and_gaps:
   - id: GAP-1
@@ -175,16 +197,19 @@ next_steps:
     - id: NS-8
       action: Sesión de rediseño visual con Sally → Amelia
       why: Pedido owner 2026-05-16, expandido 2026-05-18. Versión actual funcional pero sin pulido visual.
-      scope: |
-        (a) Layout split: fotos a la izquierda, panel a la derecha (sobre el espacio negro actual)
-        (b) Cumpleaños en el panel derecho
-        (c) Soporte calendario hebreo: opción por cumpleaños de elegir gregoriano o hebreo
-        (d) Reloj análogo semi-transparente, ocupando más espacio en pantalla
-      effort: 8-12h total — Sally specs (2-3h) + Amelia impl como epic con 4 stories (~6-9h) + hardware test
-      blockers: ninguno técnico
-      planned_start: 2026-05-19  # owner arranca con Sally mañana
+      status: done  # 2026-05-19 — Epic 7 cerrado (4 stories implementadas + polish iterativo + 7.5 descartada)
     - id: NS-9
       action: Deferred work — reemplazar base64 bridge por Filesystem.downloadFile streaming
       why: Fix proper de GAP-6 (el filtro > 20MB es un workaround, la causa raíz sigue presente)
       effort: ~30 líneas en photoCacheService + driveSyncService + tests
       blockers: post-regalo
+    - id: NS-10
+      action: Stress test 24-48h con layout NS-8 (boot, WAKE_LOCK, night mode, kiosk, sync periódico Drive, hebrew calc estable)
+      why: NS-6 stress test corrió con D3 viejo. Nuevo layout añade SVG inline (descartado), hebrew calc periódico, más DOM. Detectar memory leaks o drift con nueva superficie.
+      effort: pasivo, 24-48h con tablet enchufada
+      planned_start: 2026-05-19  # owner arranca esta noche
+    - id: NS-11
+      action: Empaquetado físico (marco de madera + tablet) + carga de contenido real (fotos en Drive folder, birthdays via AdminScreen, WelcomeScreen content)
+      why: Entrega del regalo
+      effort: depende de Ary, hermanos (foto + mensaje), y artesano del marco
+      blockers: NS-7 era esto pero con el cambio NS-8 se reabre — el contenido emocional sigue pendiente (GAP-4)
