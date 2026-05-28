@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import type { CSSProperties } from 'react'
 import { useContentStore } from '../stores/contentStore'
 import { useDisplayStore } from '../stores/displayStore'
+import { storageService } from '../services/storageService'
 
 // Timing constants (ms)
 const PHOTO_FADE_MS   = 3_000   // photo fade-in
@@ -23,9 +24,28 @@ export function WelcomeScreen() {
   const [messageVisible, setMessageVisible] = useState(false)
   const [promptVisible,  setPromptVisible]  = useState(false)
   const [exiting,        setExiting]        = useState(false)
-  const [imgSrc,         setImgSrc]         = useState(
-    welcomeConfig.photoPath || FALLBACK_PHOTO
-  )
+  const [imgSrc,         setImgSrc]         = useState(FALLBACK_PHOTO)
+
+  // Resolve la foto de bienvenida. Compat con photoPath en tres formas:
+  //  - vacío → fallback
+  //  - dataURL legacy (Preferences pre-Filesystem) o ruta web (/...) → uso directo
+  //  - path en disco (welcome/photo.jpg) → resolver a URI con convertFileSrc
+  useEffect(() => {
+    const path = welcomeConfig.photoPath
+    if (!path) {
+      setImgSrc(FALLBACK_PHOTO)
+      return
+    }
+    if (/^(data:|https?:|blob:|\/)/.test(path)) {
+      setImgSrc(path)
+      return
+    }
+    let cancelled = false
+    storageService.getWelcomePhotoUri(path).then((uri) => {
+      if (!cancelled) setImgSrc(uri ?? FALLBACK_PHOTO)
+    })
+    return () => { cancelled = true }
+  }, [welcomeConfig.photoPath])
 
   // Orchestrate the three-phase reveal on mount
   useEffect(() => {
