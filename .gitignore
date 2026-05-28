@@ -46,6 +46,11 @@ android/capacitor.settings.gradle
 # Tooling artifacts
 .playwright-mcp/
 
+# BMAD framework internals (skills + module files; actualizados por el framework, no son código del proyecto)
+# Nota: _bmad-output/ SÍ se versiona — ahí viven PRD, epics, stories y sprint-status.
+/.claude/
+/_bmad/
+
 # Dev-only test photos (seeded in contentStore when DEV=true)
 public/test-photos/
 
