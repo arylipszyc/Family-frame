@@ -152,6 +152,12 @@ function isDuplicate(phrase: YiddishPhrase, list: YiddishPhrase[]): boolean {
   )
 }
 
+function isDuplicateBirthday(b: Birthday, list: Birthday[]): boolean {
+  return list.some(
+    (e) => e.name === b.name && e.date === b.date && e.calendar === b.calendar
+  )
+}
+
 // ── Componente ────────────────────────────────────────────────────────────────
 
 export function AdminScreen() {
@@ -201,6 +207,7 @@ export function AdminScreen() {
   const [bdayDate, setBdayDate]   = useState('')
   const [bdayCalendar, setBdayCalendar] = useState<'gregorian' | 'hebrew'>('gregorian')
   const [bdayErrors, setBdayErrors] = useState({ name: false, date: false })
+  const [bdayImportText, setBdayImportText] = useState('')
 
   // Bienvenida
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -460,23 +467,75 @@ export function AdminScreen() {
     }
   }, [birthdays, setBirthdays])
 
-  // ── Bienvenida ──────────────────────────────────────────────────────────────
+  const handleExportBirthdays = useCallback(() => {
+    const data = birthdays.map(({ name, date, calendar }) => ({ name, date, calendar }))
+    setBdayImportText(JSON.stringify(data, null, 2))
+    showToast(`${birthdays.length} cumpleaños exportados — copiá el texto`, AMBER)
+  }, [birthdays])
 
-  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0]
-    if (!file) return
-    if (file.size > 1_048_576) {  // P3: límite 1 MB para Preferences
-      showToast('Foto demasiado grande (máx. 1 MB)', SEPIA)
+  const handleImportBirthdays = useCallback(async () => {
+    let parsed: unknown
+    try {
+      parsed = JSON.parse(bdayImportText.trim())
+    } catch {
+      showToast('Formato inválido — revisá el JSON', SEPIA)
       return
     }
-    const reader = new FileReader()
-    reader.onload = (ev) => {
-      setWelcomePhoto(ev.target?.result as string)
+    if (!Array.isArray(parsed)) {
+      showToast('Formato inválido — revisá el JSON', SEPIA)
+      return
     }
-    reader.onerror = () => {  // P2: error de lectura
-      showToast('Error al leer el archivo', SEPIA)
+
+    const valid: Birthday[] = []
+    for (const item of parsed) {
+      const rec = item as Record<string, unknown>
+      if (
+        typeof item === 'object' && item !== null &&
+        typeof rec.name === 'string' && rec.name.trim() !== '' &&
+        typeof rec.date === 'string' && DATE_REGEX.test(rec.date.trim())
+      ) {
+        valid.push({
+          id:       crypto.randomUUID(),
+          name:     rec.name.trim(),
+          date:     rec.date.trim(),
+          calendar: rec.calendar === 'hebrew' ? 'hebrew' : 'gregorian',  // default gregorian
+        })
+      } else {
+        showToast('Formato inválido — revisá el JSON', SEPIA)
+        return
+      }
     }
-    reader.readAsDataURL(file)
+
+    const newBdays = valid.filter((b) => !isDuplicateBirthday(b, birthdays))
+    if (newBdays.length === 0) {
+      setBdayImportText('')
+      showToast('0 cumpleaños importados (todos ya existían)', AMBER)
+      return
+    }
+
+    const updated = [...birthdays, ...newBdays]
+    try {
+      await adminContentService.saveBirthdays(updated)
+      setBirthdays(updated)
+      setBdayImportText('')
+      showToast(`${newBdays.length} cumpleaños importados`, AMBER)
+    } catch {
+      showToast('Error al guardar', SEPIA)
+    }
+  }, [bdayImportText, birthdays, setBirthdays])
+
+  // ── Bienvenida ──────────────────────────────────────────────────────────────
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    try {
+      // Foto a disco (Filesystem); solo el path se guarda luego en Preferences.
+      const path = await storageService.saveWelcomePhoto(file)
+      setWelcomePhoto(path)
+    } catch {
+      showToast('Error al guardar la foto', SEPIA)
+    }
   }
 
   const handleSaveWelcome = useCallback(async () => {
@@ -842,6 +901,28 @@ export function AdminScreen() {
               </div>
             </div>
           )}
+
+          {/* Respaldo: exportar / importar JSON */}
+          <div style={{ marginTop: '24px' }}>
+            <div style={{ fontSize: '16px', fontWeight: 500, marginBottom: '8px', color: CREAM, opacity: 0.8 }}>
+              Respaldo de cumpleaños (JSON)
+            </div>
+            <textarea
+              style={{ ...inputStyle, minHeight: '100px', resize: 'vertical' }}
+              placeholder={'[{ "name": "...", "date": "YYYY-MM-DD", "calendar": "gregorian" }]'}
+              value={bdayImportText}
+              onChange={(e) => setBdayImportText(e.target.value)}
+              data-testid="textarea-bday-import"
+            />
+            <div style={{ display: 'flex', gap: '8px', marginTop: '8px' }}>
+              <button style={secondaryBtnStyle} onClick={handleExportBirthdays} data-testid="btn-bday-export">
+                Exportar
+              </button>
+              <button style={primaryBtnStyle} onClick={handleImportBirthdays} data-testid="btn-bday-import">
+                Importar
+              </button>
+            </div>
+          </div>
         </div>
 
         {/* ── Bienvenida ── */}

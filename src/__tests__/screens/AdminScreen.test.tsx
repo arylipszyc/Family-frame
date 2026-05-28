@@ -13,6 +13,7 @@ const { mockAdminContent, mockStorageService, mockSystemSettings, mockPinService
   mockStorageService: {
     saveWelcomeConfig: vi.fn().mockResolvedValue(undefined),
     loadWelcomeConfig: vi.fn().mockResolvedValue(null),
+    saveWelcomePhoto:  vi.fn().mockResolvedValue('welcome/photo.jpg'),
   },
   mockSystemSettings: {
     savePhotoRotationInterval: vi.fn().mockResolvedValue(undefined),
@@ -352,6 +353,73 @@ describe('AdminScreen — Cumpleaños: CRUD', () => {
   })
 })
 
+describe('AdminScreen — Cumpleaños: exportar/importar JSON', () => {
+  it('exporta los cumpleaños actuales al textarea (sin id)', () => {
+    const { getByTestId } = render(<AdminScreen />)
+    fireEvent.click(getByTestId('btn-bday-export'))
+
+    const ta = getByTestId('textarea-bday-import') as HTMLTextAreaElement
+    const parsed = JSON.parse(ta.value)
+    expect(parsed).toHaveLength(1)
+    expect(parsed[0]).toEqual({ name: 'Abel', date: '1948-03-15', calendar: 'gregorian' })
+    expect(parsed[0].id).toBeUndefined()
+  })
+
+  it('importa cumpleaños válidos y los fusiona con id generado', async () => {
+    const { getByTestId } = render(<AdminScreen />)
+    const json = JSON.stringify([{ name: 'Liliana', date: '1950-07-22', calendar: 'hebrew' }])
+    fireEvent.change(getByTestId('textarea-bday-import'), { target: { value: json } })
+    fireEvent.click(getByTestId('btn-bday-import'))
+
+    await waitFor(() => expect(mockAdminContent.saveBirthdays).toHaveBeenCalledOnce())
+    const saved = mockAdminContent.saveBirthdays.mock.calls[0][0]
+    expect(saved).toHaveLength(2)
+    expect(saved[1].name).toBe('Liliana')
+    expect(saved[1].calendar).toBe('hebrew')
+    expect(saved[1].id).toBeTruthy()
+  })
+
+  it('defaultea calendar a gregorian cuando falta en el JSON', async () => {
+    const { getByTestId } = render(<AdminScreen />)
+    const json = JSON.stringify([{ name: 'Haim', date: '1990-05-29' }])
+    fireEvent.change(getByTestId('textarea-bday-import'), { target: { value: json } })
+    fireEvent.click(getByTestId('btn-bday-import'))
+
+    await waitFor(() => expect(mockAdminContent.saveBirthdays).toHaveBeenCalledOnce())
+    const saved = mockAdminContent.saveBirthdays.mock.calls[0][0]
+    expect(saved[1].calendar).toBe('gregorian')
+  })
+
+  it('no importa duplicados exactos (mismo nombre + fecha + calendario)', async () => {
+    const { getByTestId } = render(<AdminScreen />)
+    const json = JSON.stringify([{ name: 'Abel', date: '1948-03-15', calendar: 'gregorian' }])
+    fireEvent.change(getByTestId('textarea-bday-import'), { target: { value: json } })
+    fireEvent.click(getByTestId('btn-bday-import'))
+
+    await waitFor(() => expect(getByTestId('toast').style.opacity).toBe('1'))
+    expect(mockAdminContent.saveBirthdays).not.toHaveBeenCalled()
+  })
+
+  it('muestra toast de error ante JSON inválido', async () => {
+    const { getByTestId } = render(<AdminScreen />)
+    fireEvent.change(getByTestId('textarea-bday-import'), { target: { value: 'not-json' } })
+    fireEvent.click(getByTestId('btn-bday-import'))
+
+    await waitFor(() => expect(getByTestId('toast').style.opacity).toBe('1'))
+    expect(mockAdminContent.saveBirthdays).not.toHaveBeenCalled()
+  })
+
+  it('rechaza item con fecha en formato inválido', async () => {
+    const { getByTestId } = render(<AdminScreen />)
+    const json = JSON.stringify([{ name: 'Liliana', date: '22/07/1950', calendar: 'gregorian' }])
+    fireEvent.change(getByTestId('textarea-bday-import'), { target: { value: json } })
+    fireEvent.click(getByTestId('btn-bday-import'))
+
+    await waitFor(() => expect(getByTestId('toast').style.opacity).toBe('1'))
+    expect(mockAdminContent.saveBirthdays).not.toHaveBeenCalled()
+  })
+})
+
 describe('AdminScreen — Sección Bienvenida', () => {
   it('renderiza la sección de bienvenida', () => {
     const { getByTestId } = render(<AdminScreen />)
@@ -376,16 +444,7 @@ describe('AdminScreen — Sección Bienvenida', () => {
     expect(saved.message).toBe('Feliz aniversario')
   })
 
-  it('lee el archivo y muestra indicador de foto seleccionada', async () => {
-    const mockReader = {
-      onload:        null as ((e: { target: { result: string } }) => void) | null,
-      onerror:       null as (() => void) | null,
-      readAsDataURL: vi.fn(function(this: typeof mockReader) {
-        this.onload?.({ target: { result: 'data:image/jpeg;base64,abc' } })
-      }),
-    }
-    vi.stubGlobal('FileReader', vi.fn(() => mockReader))
-
+  it('escribe la foto a disco y muestra indicador de foto seleccionada', async () => {
     const { getByTestId, queryByTestId } = render(<AdminScreen />)
     const fileInput = getByTestId('file-input-photo') as HTMLInputElement
     expect(queryByTestId('welcome-photo-preview')).toBeNull()
@@ -395,18 +454,33 @@ describe('AdminScreen — Sección Bienvenida', () => {
     fireEvent.change(fileInput)
 
     await waitFor(() => {
+      expect(mockStorageService.saveWelcomePhoto).toHaveBeenCalledOnce()
       expect(queryByTestId('welcome-photo-preview')).not.toBeNull()
     })
-    vi.unstubAllGlobals()
+    expect(mockStorageService.saveWelcomePhoto.mock.calls[0][0]).toBe(file)
   })
 
-  it('muestra toast si el archivo supera 1 MB', async () => {
+  it('acepta fotos > 1 MB (sin límite de tamaño)', async () => {
     const { getByTestId } = render(<AdminScreen />)
     const fileInput = getByTestId('file-input-photo') as HTMLInputElement
 
-    // Crear un File mock con size > 1MB
     const bigFile = new File(['x'.repeat(1_100_000)], 'grande.jpg', { type: 'image/jpeg' })
     Object.defineProperty(fileInput, 'files', { value: [bigFile] })
+    fireEvent.change(fileInput)
+
+    await waitFor(() => {
+      expect(mockStorageService.saveWelcomePhoto).toHaveBeenCalledOnce()
+    })
+    expect(mockStorageService.saveWelcomePhoto.mock.calls[0][0]).toBe(bigFile)
+  })
+
+  it('muestra toast de error si falla la escritura de la foto', async () => {
+    mockStorageService.saveWelcomePhoto.mockRejectedValueOnce(new Error('disk full'))
+    const { getByTestId } = render(<AdminScreen />)
+    const fileInput = getByTestId('file-input-photo') as HTMLInputElement
+
+    const file = new File(['img'], 'foto.jpg', { type: 'image/jpeg' })
+    Object.defineProperty(fileInput, 'files', { value: [file] })
     fireEvent.change(fileInput)
 
     await waitFor(() => {

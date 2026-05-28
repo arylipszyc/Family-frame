@@ -10,6 +10,7 @@ import { systemSettingsService } from './services/systemSettingsService'
 import { folderConfigService } from './services/folderConfigService'
 import { saConfigService } from './services/saConfigService'
 import { yiddishPhrasesBootstrapService } from './services/yiddishPhrasesBootstrapService'
+import { birthdaysBootstrapService } from './services/birthdaysBootstrapService'
 import { useSettingsStore } from './stores/settingsStore'
 import { useSync } from './hooks/useSync'
 import { KioskScreen } from './screens/KioskScreen'
@@ -39,10 +40,13 @@ function App() {
   useSync()
 
   useEffect(() => {
-    // Bootstrap de yiddish-phrases.json ANTES del load — escribe en la misma
-    // Preferences key que loadYiddishPhrases lee. Si lo dejáramos en el Promise.all
-    // habría race condition.
-    yiddishPhrasesBootstrapService.bootstrapFromFile().finally(() => {
+    // Bootstrap de yiddish-phrases.json y birthdays.json ANTES del load — escriben en
+    // las mismas Preferences keys que loadYiddishPhrases/loadBirthdays leen. Si los
+    // dejáramos en el Promise.all de abajo habría race condition.
+    Promise.all([
+      yiddishPhrasesBootstrapService.bootstrapFromFile(),
+      birthdaysBootstrapService.bootstrapFromFile(),
+    ]).finally(() => {
     Promise.all([
       storageService.loadWelcomeConfig(),
       photoCacheService.initialize().then(() => photoCacheService.getAllCachedPhotos()),
