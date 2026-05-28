@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, cleanup, act } from '@testing-library/react'
+import { render, cleanup, act, fireEvent } from '@testing-library/react'
 import { PhotoSlide } from '../../components/PhotoSlide'
 import type { Photo } from '../../types/Photo'
 
@@ -177,5 +177,66 @@ describe('PhotoSlide — máquina de transición 3-fase', () => {
     expect(setTimeoutSpy.mock.calls.length).toBe(callsAfterFirstAdvance)
 
     setTimeoutSpy.mockRestore()
+  })
+})
+
+describe('PhotoSlide — navegación manual por swipe', () => {
+  function getRoot(container: HTMLElement): HTMLElement {
+    return container.firstElementChild as HTMLElement
+  }
+
+  function swipe(root: HTMLElement, fromX: number, toX: number): void {
+    act(() => {
+      fireEvent.pointerDown(root, { clientX: fromX, pointerId: 1 })
+      fireEvent.pointerUp(root,   { clientX: toX,   pointerId: 1 })
+    })
+  }
+
+  it('(g) swipe izquierda → avanza a la foto siguiente', () => {
+    const { container } = render(<PhotoSlide photos={photos3} intervalMs={10_000} />)
+    expect(getTop(container).getAttribute('src')).toContain('a.jpg')
+
+    swipe(getRoot(container), 300, 100)   // dx = -200 → next
+    act(() => { vi.advanceTimersByTime(TOTAL) })
+
+    expect(getTop(container).getAttribute('src')).toContain('b.jpg')
+  })
+
+  it('(h) swipe derecha → retrocede a la foto anterior (wrap-around)', () => {
+    const { container } = render(<PhotoSlide photos={photos3} intervalMs={10_000} />)
+    expect(getTop(container).getAttribute('src')).toContain('a.jpg')
+
+    swipe(getRoot(container), 100, 300)   // dx = +200 → prev (desde idx 0 → idx 2)
+    act(() => { vi.advanceTimersByTime(TOTAL) })
+
+    expect(getTop(container).getAttribute('src')).toContain('c.jpg')
+  })
+
+  it('(i) movimiento menor al umbral no navega', () => {
+    const { container } = render(<PhotoSlide photos={photos3} intervalMs={10_000} />)
+
+    swipe(getRoot(container), 300, 280)   // dx = -20 < 50px
+    act(() => { vi.advanceTimersByTime(TOTAL) })
+
+    expect(getTop(container).getAttribute('src')).toContain('a.jpg')
+  })
+
+  it('(j) un swipe manual reinicia el timer de auto-rotación', () => {
+    const interval = 10_000
+    const { container } = render(<PhotoSlide photos={photos3} intervalMs={interval} />)
+
+    // t=6000: aún no dispara auto (< interval)
+    act(() => { vi.advanceTimersByTime(6_000) })
+    expect(getTop(container).getAttribute('src')).toContain('a.jpg')
+
+    // Swipe → next, reinicia timer en t=6000 (próximo auto recién a t=16000)
+    swipe(getRoot(container), 300, 100)
+    act(() => { vi.advanceTimersByTime(TOTAL) })   // t≈8800 → transición manual completa
+    expect(getTop(container).getAttribute('src')).toContain('b.jpg')
+
+    // Avanzar a t=15000: superamos el viejo mark de 10000 pero no el reset (16000).
+    // Si el timer NO se hubiera reiniciado, el auto de t=10000 ya habría pasado a c.jpg.
+    act(() => { vi.advanceTimersByTime(15_000 - TOTAL - 6_000) })
+    expect(getTop(container).getAttribute('src')).toContain('b.jpg')
   })
 })

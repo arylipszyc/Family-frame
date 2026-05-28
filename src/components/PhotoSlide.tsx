@@ -6,6 +6,7 @@ import type { Photo } from '../types/Photo'
 const FADE_MS = 1250
 const HOLD_MS = 300
 const DEFAULT_INTERVAL_MS = 30_000
+const SWIPE_THRESHOLD_PX = 50
 
 type Phase = 'idle' | 'fade-out' | 'hold' | 'fade-in'
 
@@ -27,6 +28,9 @@ export function PhotoSlide({ photos, intervalMs = DEFAULT_INTERVAL_MS }: PhotoSl
   const [nextIdx, setNextIdx] = useState(photos.length > 1 ? 1 : 0)
   const [phase, setPhase] = useState<Phase>('idle')
   const [errored, setErrored] = useState<Set<number>>(new Set())
+  // Cambia en cada swipe manual → reinicia el timer de auto-rotación (useInterval).
+  const [cycleKey, setCycleKey] = useState(0)
+  const pointerStartXRef = useRef<number | null>(null)
 
   // Sync refs — phaseRef is the same-tick guard against reentrancy
   const phaseRef = useRef<Phase>('idle')
@@ -72,6 +76,17 @@ export function PhotoSlide({ photos, intervalMs = DEFAULT_INTERVAL_MS }: PhotoSl
     return attempts >= photos.length ? from : idx
   }, [photos.length])
 
+  const getPrevIdx = useCallback((from: number, errSet: Set<number>): number => {
+    if (photos.length <= 1) return 0
+    let idx = (from - 1 + photos.length) % photos.length
+    let attempts = 0
+    while (errSet.has(idx) && attempts < photos.length) {
+      idx = (idx - 1 + photos.length) % photos.length
+      attempts++
+    }
+    return attempts >= photos.length ? from : idx
+  }, [photos.length])
+
   const schedule = useCallback((fn: () => void, ms: number): void => {
     const id = setTimeout(() => {
       timeoutsRef.current = timeoutsRef.current.filter(t => t !== id)
@@ -81,13 +96,11 @@ export function PhotoSlide({ photos, intervalMs = DEFAULT_INTERVAL_MS }: PhotoSl
     timeoutsRef.current.push(id)
   }, [])
 
-  const advance = useCallback(() => {
-    if (phaseRef.current !== 'idle') return
-    if (photos.length < 2) return
-
-    const current = curIdxRef.current
-    const incoming = getNextIdx(current, erroredRef.current)
-    if (incoming === current) return
+  // Corre la máquina fade-out → hold → fade-in hacia `incoming`. El bottom layer
+  // (target del fade-in) se fija a `incoming` al inicio para soportar ambas direcciones.
+  const runTransition = useCallback((incoming: number) => {
+    setNextIdx(incoming)
+    nextIdxRef.current = incoming
 
     phaseRef.current = 'fade-out'
     setPhase('fade-out')
@@ -108,9 +121,47 @@ export function PhotoSlide({ photos, intervalMs = DEFAULT_INTERVAL_MS }: PhotoSl
       phaseRef.current = 'idle'
       setPhase('idle')
     }, FADE_MS + HOLD_MS + FADE_MS)
-  }, [photos.length, getNextIdx, schedule])
+  }, [getNextIdx, schedule])
 
-  useInterval(advance, photos.length > 1 ? intervalMs : null)
+  const advance = useCallback(() => {
+    if (phaseRef.current !== 'idle') return
+    if (photos.length < 2) return
+
+    const incoming = getNextIdx(curIdxRef.current, erroredRef.current)
+    if (incoming === curIdxRef.current) return
+    runTransition(incoming)
+  }, [photos.length, getNextIdx, runTransition])
+
+  // Navegación manual por swipe. Reinicia el timer (cycleKey) para que no salte enseguida.
+  const manualNav = useCallback((dir: 'next' | 'prev') => {
+    if (phaseRef.current !== 'idle') return
+    if (photos.length < 2) return
+
+    const current = curIdxRef.current
+    const incoming = dir === 'next'
+      ? getNextIdx(current, erroredRef.current)
+      : getPrevIdx(current, erroredRef.current)
+    if (incoming === current) return
+
+    setCycleKey(k => k + 1)
+    runTransition(incoming)
+  }, [photos.length, getNextIdx, getPrevIdx, runTransition])
+
+  const handlePointerDown = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    pointerStartXRef.current = e.clientX
+    try { e.currentTarget.setPointerCapture?.(e.pointerId) } catch { /* jsdom / no-op */ }
+  }, [])
+
+  const handlePointerUp = useCallback((e: React.PointerEvent<HTMLDivElement>) => {
+    const startX = pointerStartXRef.current
+    pointerStartXRef.current = null
+    if (startX === null) return
+    const dx = e.clientX - startX
+    if (Math.abs(dx) < SWIPE_THRESHOLD_PX) return
+    manualNav(dx < 0 ? 'next' : 'prev')  // swipe izquierda (dx<0) → siguiente
+  }, [manualNav])
+
+  useInterval(advance, photos.length > 1 ? intervalMs : null, cycleKey)
 
   // Empty state — escapes PhotoZone via position: fixed so the message is
   // centered on the viewport (split visually collapses while photos load).
@@ -150,7 +201,7 @@ export function PhotoSlide({ photos, intervalMs = DEFAULT_INTERVAL_MS }: PhotoSl
   }
 
   return (
-    <div style={containerStyle}>
+    <div style={containerStyle} onPointerDown={handlePointerDown} onPointerUp={handlePointerUp}>
       {!nextErrored && (
         <img
           key={`bottom-${safeNextIdx}`}
@@ -185,6 +236,9 @@ const containerStyle: CSSProperties = {
   position: 'absolute',
   inset: 0,
   overflow: 'hidden',
+  // El WebView no debe interpretar el arrastre horizontal como scroll/gesto:
+  // sin esto dispara pointercancel en vez de pointerup y el swipe nunca se detecta.
+  touchAction: 'none',
 }
 
 const emptyContainerStyle: CSSProperties = {
