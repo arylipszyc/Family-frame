@@ -171,6 +171,8 @@ export function AdminScreen() {
   const nightModeEnd       = useSettingsStore((s) => s.nightModeEnd)
   const setNightModeStart  = useSettingsStore((s) => s.setNightModeStart)
   const setNightModeEnd    = useSettingsStore((s) => s.setNightModeEnd)
+  const yiddishScript      = useSettingsStore((s) => s.yiddishScript)
+  const setYiddishScript   = useSettingsStore((s) => s.setYiddishScript)
 
   // Salida
   const [exiting, setExiting] = useState(false)
@@ -247,6 +249,17 @@ export function AdminScreen() {
     }, 2000)
   }
 
+  // ── Yiddish Script (hebreo / fonética) ──────────────────────────────────────
+
+  const handleYiddishScriptChange = useCallback(async (next: 'hebrew' | 'phonetic') => {
+    setYiddishScript(next)
+    try {
+      await systemSettingsService.saveYiddishScript(next)
+    } catch {
+      showToast('Error al guardar', SEPIA)
+    }
+  }, [setYiddishScript])
+
   // ── Yiddish CRUD ────────────────────────────────────────────────────────────
 
   function openAddYiddish() {
@@ -274,13 +287,15 @@ export function AdminScreen() {
   }
 
   const handleSaveYiddish = useCallback(async () => {
+    // yiddish (letras hebreas) es opcional — si está vacío, el render hace fallback
+    // a transliteration en modo 'hebrew'. trans + spanish siguen siendo requeridos.
     const errors = {
-      yiddish: yiddishField.trim() === '',
+      yiddish: false,
       trans:   transField.trim() === '',
       spanish: spanishField.trim() === '',
     }
     setYiddishErrors(errors)
-    if (errors.yiddish || errors.trans || errors.spanish) return
+    if (errors.trans || errors.spanish) return
 
     const phrase: YiddishPhrase = {
       yiddish:       yiddishField.trim(),
@@ -341,7 +356,6 @@ export function AdminScreen() {
         typeof (item as Record<string, unknown>).yiddish === 'string' &&
         typeof (item as Record<string, unknown>).transliteration === 'string' &&
         typeof (item as Record<string, unknown>).spanish === 'string' &&
-        (item as Record<string, string>).yiddish.trim() !== '' &&
         (item as Record<string, string>).transliteration.trim() !== '' &&
         (item as Record<string, string>).spanish.trim() !== ''
       ) {
@@ -617,6 +631,37 @@ export function AdminScreen() {
         {/* ── Frases Yiddish ── */}
         <div style={sectionStyle} data-testid="section-yiddish">
           <div style={sectionTitleStyle}>Frases Yiddish</div>
+
+          {/* Toggle script: hebreo vs fonética — persistencia inmediata */}
+          <div data-testid="yiddish-script-group" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+            <label style={{ fontFamily: "'Inter', sans-serif", fontSize: '14px', fontWeight: 500, color: CREAM, opacity: 0.8 }}>
+              Mostrar frase en
+            </label>
+            <div style={{ display: 'flex', flexDirection: 'row', gap: '24px', alignItems: 'center' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '48px', cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 500, color: CREAM }}>
+                <input
+                  type="radio"
+                  name="yiddish-script"
+                  value="hebrew"
+                  checked={yiddishScript === 'hebrew'}
+                  onChange={() => handleYiddishScriptChange('hebrew')}
+                  data-testid="radio-script-hebrew"
+                />
+                Letras hebreas
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', minHeight: '48px', cursor: 'pointer', fontFamily: "'Inter', sans-serif", fontSize: '16px', fontWeight: 500, color: CREAM }}>
+                <input
+                  type="radio"
+                  name="yiddish-script"
+                  value="phonetic"
+                  checked={yiddishScript === 'phonetic'}
+                  onChange={() => handleYiddishScriptChange('phonetic')}
+                  data-testid="radio-script-phonetic"
+                />
+                Fonética
+              </label>
+            </div>
+          </div>
 
           {/* Lista */}
           {yiddishPhrases.map((p, idx) => (

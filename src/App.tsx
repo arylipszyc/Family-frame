@@ -9,6 +9,7 @@ import { adminContentService } from './services/adminContentService'
 import { systemSettingsService } from './services/systemSettingsService'
 import { folderConfigService } from './services/folderConfigService'
 import { saConfigService } from './services/saConfigService'
+import { yiddishPhrasesBootstrapService } from './services/yiddishPhrasesBootstrapService'
 import { useSettingsStore } from './stores/settingsStore'
 import { useSync } from './hooks/useSync'
 import { KioskScreen } from './screens/KioskScreen'
@@ -31,12 +32,17 @@ function App() {
   const setPhotoRotationInterval = useSettingsStore((s) => s.setPhotoRotationInterval)
   const setNightModeStart        = useSettingsStore((s) => s.setNightModeStart)
   const setNightModeEnd          = useSettingsStore((s) => s.setNightModeEnd)
+  const setYiddishScript         = useSettingsStore((s) => s.setYiddishScript)
   const [initialized, setInitialized] = useState(false)
 
   // Network listener + auto-sync (registered once for app lifetime)
   useSync()
 
   useEffect(() => {
+    // Bootstrap de yiddish-phrases.json ANTES del load — escribe en la misma
+    // Preferences key que loadYiddishPhrases lee. Si lo dejáramos en el Promise.all
+    // habría race condition.
+    yiddishPhrasesBootstrapService.bootstrapFromFile().finally(() => {
     Promise.all([
       storageService.loadWelcomeConfig(),
       photoCacheService.initialize().then(() => photoCacheService.getAllCachedPhotos()),
@@ -46,9 +52,10 @@ function App() {
       systemSettingsService.loadPhotoRotationInterval(),
       systemSettingsService.loadNightModeStart(),
       systemSettingsService.loadNightModeEnd(),
+      systemSettingsService.loadYiddishScript(),
       folderConfigService.bootstrapFromFile(),
       saConfigService.bootstrapFromFile(),
-    ]).then(([config, photos, , phrases, birthdays, rotInterval, nightStart, nightEnd]) => {
+    ]).then(([config, photos, , phrases, birthdays, rotInterval, nightStart, nightEnd, yidScript]) => {
       if (config)       setWelcomeConfig(config)
       if (photos.length > 0) setPhotos(photos)
       if (phrases)      setYiddishPhrases(phrases)
@@ -56,13 +63,15 @@ function App() {
       if (rotInterval !== null) setPhotoRotationInterval(rotInterval)
       if (nightStart)   setNightModeStart(nightStart)
       if (nightEnd)     setNightModeEnd(nightEnd)
+      if (yidScript)    setYiddishScript(yidScript)
       setInitialized(true)
     }).catch(() => {
       // P1: fallo de init → mostrar app con defaults en lugar de pantalla negra permanente
       setInitialized(true)
     })
+    })  // ← cierra .finally del bootstrap
   }, [setWelcomeConfig, setPhotos, setYiddishPhrases, setBirthdays,
-      setPhotoRotationInterval, setNightModeStart, setNightModeEnd])
+      setPhotoRotationInterval, setNightModeStart, setNightModeEnd, setYiddishScript])
 
   if (!initialized) return <div style={initScreenStyle} />
 

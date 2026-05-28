@@ -154,11 +154,12 @@ describe('AdminScreen — Frases Yiddish: agregar', () => {
     expect(mockAdminContent.saveYiddishPhrases).not.toHaveBeenCalled()
   })
 
-  it('aplica borde amber en campo vacío al intentar guardar', async () => {
+  it('aplica borde amber en campo requerido vacío al intentar guardar', async () => {
     const { getByTestId } = render(<AdminScreen />)
     fireEvent.click(getByTestId('btn-add-yiddish'))
     fireEvent.click(getByTestId('btn-save-yiddish'))
-    const input = getByTestId('input-yiddish') as HTMLInputElement
+    // yiddish (letras hebreas) es opcional — el borde amber se aplica a trans/spanish
+    const input = getByTestId('input-trans') as HTMLInputElement
     // jsdom convierte hex a rgb; verificar que hay borde amber (rgb(200,149,108))
     expect(input.style.border).toContain('200, 149, 108')
   })

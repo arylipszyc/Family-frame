@@ -83,10 +83,16 @@ describe('systemSettingsService — clamp (P5)', () => {
     expect(result).toBe(10_000)
   })
 
-  it('clampea valores mayores a 300 000 ms al máximo', async () => {
-    store['photoRotationInterval'] = '999999'
+  it('clampea valores mayores a 86 400 000 ms (1 día) al máximo', async () => {
+    store['photoRotationInterval'] = '99999999999'
     const result = await systemSettingsService.loadPhotoRotationInterval()
-    expect(result).toBe(300_000)
+    expect(result).toBe(86_400_000)
+  })
+
+  it('preserva valores grandes dentro del rango admin (ej. 1 hora)', async () => {
+    store['photoRotationInterval'] = '3600000'
+    const result = await systemSettingsService.loadPhotoRotationInterval()
+    expect(result).toBe(3_600_000)
   })
 
   it('retorna el valor sin modificar si está dentro del rango', async () => {

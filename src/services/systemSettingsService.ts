@@ -1,9 +1,11 @@
 import { Preferences } from '@capacitor/preferences'
+import type { YiddishScript } from '../stores/settingsStore'
 
 const KEYS = {
   rotationInterval: 'photoRotationInterval',
   nightStart:       'nightModeStart',
   nightEnd:         'nightModeEnd',
+  yiddishScript:    'yiddishScript',
 } as const
 
 export const systemSettingsService = {
@@ -19,8 +21,9 @@ export const systemSettingsService = {
       if (!value) return null
       const n = parseInt(value, 10)
       if (isNaN(n)) return null
-      // P5: clamp al rango válido [10 s, 300 s] en ms para evitar setInterval con 0 o negativo
-      return Math.min(300_000, Math.max(10_000, n))
+      // Clamp al rango válido del admin [10 s, 86400 s = 1 día] en ms — evita
+      // setInterval con 0/negativo y mantiene consistencia con la validación de AdminScreen.
+      return Math.min(86_400_000, Math.max(10_000, n))
     } catch {
       return null
     }
@@ -51,6 +54,22 @@ export const systemSettingsService = {
     try {
       const { value } = await Preferences.get({ key: KEYS.nightEnd })
       return value ?? null
+    } catch {
+      return null
+    }
+  },
+
+  // ── yiddishScript ('hebrew' | 'phonetic') ─────────────────────────────────
+
+  async saveYiddishScript(s: YiddishScript): Promise<void> {
+    await Preferences.set({ key: KEYS.yiddishScript, value: s })
+  },
+
+  async loadYiddishScript(): Promise<YiddishScript | null> {
+    try {
+      const { value } = await Preferences.get({ key: KEYS.yiddishScript })
+      if (value === 'hebrew' || value === 'phonetic') return value
+      return null
     } catch {
       return null
     }

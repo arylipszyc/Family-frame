@@ -50,11 +50,15 @@ export function PhotoSlide({ photos, intervalMs = DEFAULT_INTERVAL_MS }: PhotoSl
   }, [])
 
   // Reset transition state when photos array identity or length changes.
+  // Also clear errored set — paths cacheados pueden volverse válidos tras un sync
+  // (cache reescrita, convertFileSrc reinicializado). Sin reset, índices muertos
+  // quedan permanentes y eventualmente todas las fotos pueden marcarse errored.
   useEffect(() => {
     timeoutsRef.current.forEach(clearTimeout)
     timeoutsRef.current = []
     phaseRef.current = 'idle'
     setPhase('idle')
+    setErrored(new Set())
   }, [photos])
 
   const getNextIdx = useCallback((from: number, errSet: Set<number>): number => {
@@ -123,8 +127,27 @@ export function PhotoSlide({ photos, intervalMs = DEFAULT_INTERVAL_MS }: PhotoSl
   const currentErrored = errored.has(safeCurrentIdx)
   const nextErrored = errored.has(safeNextIdx)
 
+  // Fallback: si la foto current errea, buscamos cualquier índice no-errored
+  // para no dejar la zona en negro. La actual implementación de getNextIdx solo
+  // corre en advance; este lookup es para el render inmediato.
+  let displayIdx = safeCurrentIdx
+  if (currentErrored && photos.length > 0) {
+    for (let i = 0; i < photos.length; i++) {
+      if (!errored.has(i)) { displayIdx = i; break }
+    }
+  }
+  const showFallback = currentErrored && errored.size >= photos.length
+
   const topOpacity = phase === 'idle' ? 1 : 0
   const bottomOpacity = phase === 'fade-in' ? 1 : 0
+
+  if (showFallback) {
+    return (
+      <div style={emptyContainerStyle}>
+        <p style={emptyTextStyle}>Preparando tus fotos...</p>
+      </div>
+    )
+  }
 
   return (
     <div style={containerStyle}>
@@ -142,20 +165,18 @@ export function PhotoSlide({ photos, intervalMs = DEFAULT_INTERVAL_MS }: PhotoSl
           onError={() => setErrored(prev => new Set([...prev, nextIdxRef.current]))}
         />
       )}
-      {!currentErrored && (
-        <img
-          key={`top-${safeCurrentIdx}`}
-          src={toDisplayUrl(photos[safeCurrentIdx].localPath)}
-          style={{
-            ...imgBaseStyle,
-            zIndex: 2,
-            opacity: topOpacity,
-            transition: `opacity ${FADE_MS}ms ease-in-out`,
-          }}
-          alt=""
-          onError={() => setErrored(prev => new Set([...prev, curIdxRef.current]))}
-        />
-      )}
+      <img
+        key={`top-${displayIdx}`}
+        src={toDisplayUrl(photos[displayIdx].localPath)}
+        style={{
+          ...imgBaseStyle,
+          zIndex: 2,
+          opacity: topOpacity,
+          transition: `opacity ${FADE_MS}ms ease-in-out`,
+        }}
+        alt=""
+        onError={() => setErrored(prev => new Set([...prev, displayIdx]))}
+      />
     </div>
   )
 }
@@ -189,6 +210,6 @@ const imgBaseStyle: CSSProperties = {
   height: '100%',
   objectFit: 'contain',
   objectPosition: 'left center',
-  filter: 'saturate(0.85) brightness(0.95) sepia(0.08)',
+  filter: 'saturate(0.85) sepia(0.08)',
 }
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import type { CSSProperties } from 'react'
 import type { YiddishPhrase as YiddishPhraseType } from '../types/YiddishPhrase'
+import { useSettingsStore } from '../stores/settingsStore'
 
 interface YiddishPhraseProps {
   phrases: YiddishPhraseType[]
@@ -21,6 +22,7 @@ function msUntilMidnight(): number {
 
 export function YiddishPhrase({ phrases }: YiddishPhraseProps) {
   const [dayIndex, setDayIndex] = useState(() => getDayOfYear(new Date()))
+  const yiddishScript = useSettingsStore((s) => s.yiddishScript)
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>
@@ -39,12 +41,17 @@ export function YiddishPhrase({ phrases }: YiddishPhraseProps) {
   if (phrases.length === 0) return null
 
   const phrase = phrases[dayIndex % phrases.length]
+  // Fallback a transliteration si modo 'hebrew' pero el campo yiddish está vacío
+  // (frases importadas sin completar las letras hebreas todavía).
+  const primary = yiddishScript === 'hebrew' && phrase.yiddish.trim() !== ''
+    ? phrase.yiddish
+    : phrase.transliteration
 
   return (
     <>
       <div style={gradientStyle} />
       <div style={containerStyle}>
-        <p style={yiddishStyle}>{phrase.yiddish}</p>
+        <p style={yiddishStyle}>{primary}</p>
         <p style={translationStyle}>{phrase.spanish}</p>
       </div>
     </>
