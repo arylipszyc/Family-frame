@@ -1018,3 +1018,213 @@ para entregar el marco funcionando el 12 de mayo sin depender de Play Store.
 **Then** la app arranca sola, muestra `WelcomeScreen` y pasa a `KioskScreen` en menos de 60 segundos (NFR6)
 **And** todos los datos persistidos (fotos cacheadas, frases Yiddish, cumpleaños, welcomeConfig) sobreviven el reinicio
 
+---
+
+## Epic 7: Rediseño visual del kiosk (NS-8)
+
+**Contexto:** la validación en hardware (2026-05-16/18) confirmó que el producto funciona, pero el layout actual D3 (texto flotando sobre foto full-bleed) deja bandas negras grandes con fotos verticales y se siente "de developer", no de cuadro. Owner pidió rediseño 2026-05-16, expandido 2026-05-18: split foto-izquierda / panel-derecha, cumpleaños fuera de la foto, soporte calendario hebreo, y reloj análogo (deferred).
+
+**Dirección elegida (ver UX spec → "NS-8 Layout Redesign Addendum"):** Split 78/22 con `object-fit: contain` (sin crop) y backdrop cálido en lugar de negro — las bandas que aparecen cuando la foto no llena la zona se leen como passe-partout, no como espacio vacío. Yiddish permanece overlay sobre la foto (sin cambios funcionales). Birthdays y DateDisplay migran al panel.
+
+**Deadline:** 2026-05-25 (regalo). Budget total: ~6-9h dev en tablet 14".
+
+---
+
+### Story 7.1: KioskScreen — layout split 78/22 con backdrop cálido
+
+Como usuario pasivo (Abel o Liliana),
+quiero que el marco se vea siempre lleno y cálido independientemente de la orientación de la foto,
+para que el frame se sienta como un cuadro enmarcado, sin huecos negros visibles.
+
+**Acceptance Criteria:**
+
+**Given** el `KioskScreen` rediseñado
+**When** se renderiza
+**Then** la pantalla se divide en `PhotoZone` (78% width, izquierda) y `SidePanel` (22% width, derecha) usando `display: flex; flex-direction: row`
+**And** ambas zonas comparten el mismo background `linear-gradient(to bottom, #1A1210, #1F1813)` heredado del container raíz — la transición visual entre ellas es invisible
+**And** el container raíz mantiene el pixel shift existente (`inset: '-3px'`, transform translate ±1-2px cada 3min)
+
+**Given** una foto cargada en `PhotoSlide` dentro del `PhotoZone`
+**When** se renderiza
+**Then** la foto mantiene `object-fit: contain` (sin crop — comportamiento actual preservado)
+**And** la foto ocupa `position: absolute; inset: 0` dentro del PhotoZone (no `fixed` al viewport)
+**And** la foto conserva el paper overlay actual (`filter: saturate(0.85) brightness(0.95) sepia(0.08)` + linen 6%)
+**And** el `backgroundColor` propio del PhotoSlide se remueve (hereda el degradado del root)
+
+**Given** una foto horizontal 16:9 (e.g., 1920×1080)
+**When** se renderiza en PhotoZone 1498×1080
+**Then** la foto se muestra al ancho completo 1498px
+**And** quedan bandas warm-dark de ~118px arriba y abajo, leídas como passe-partout cálido (no como espacio negro)
+
+**Given** una foto vertical 9:16 (e.g., 1080×1920)
+**When** se renderiza en PhotoZone 1498×1080
+**Then** la foto se muestra al alto completo 1080px
+**And** quedan bandas warm-dark de ~445px a cada lado, leídas como retrato enmarcado (no como espacio negro)
+
+**Given** el `YiddishPhrase` existente
+**When** se renderiza dentro del PhotoZone
+**Then** sigue posicionado `position: absolute; bottom: 2.5vh; left: 2.5vw` relativo al PhotoZone (no al viewport)
+**And** mantiene Playfair Display `clamp(40px, 4vw, 64px)`, gradiente radial protector y text-shadow multicapa (sin cambios funcionales)
+**And** la frase es visible sobre la foto con buena legibilidad
+
+**Given** el `NightModeOverlay`
+**When** se activa
+**Then** cubre toda la pantalla (foto + panel) como hasta ahora — sin cambios
+
+**Given** el `GestureDetector` para acceso admin
+**When** se renderiza
+**Then** la zona sensible (esquina inferior izquierda, 64×64px) sigue activa y funciona igual
+
+**Given** la transición entre dos fotos en `PhotoSlide`
+**When** la foto actual y la siguiente tienen diferente aspect ratio (e.g., vertical → horizontal)
+**Then** la transición se hace en dos fases secuenciales — fade-through-passe-partout — sin overlap simultáneo de ambas fotos:
+  - Fase 1 (fade-out, 1250ms): la foto actual transiciona opacity 1→0 mientras la siguiente permanece a opacity 0
+  - Fase 2 (fade-in, 1250ms): la foto actual permanece a opacity 0 mientras la siguiente transiciona opacity 0→1
+**And** en ningún momento intermedio se ven ambas fotos parcialmente visibles a la vez
+**And** durante el breve instante entre fase 1 y fase 2, lo único visible es el degradado warm-dark del passe-partout (no negro plano)
+**And** el tiempo total de transición sigue siendo 2500ms (mismo ritmo contemplativo que el actual)
+
+**Given** la nueva máquina de estados de transición
+**When** se implementa en `PhotoSlide`
+**Then** la capa inferior (bottom) cambia su comportamiento: ya no está siempre a `opacity: 1`, sino que arranca en 0 y solo transiciona a 1 durante la fase fade-in
+**And** al completar la fase fade-in, el swap de índices (`curIdx = nextIdx`, `nextIdx = computeNext(nextIdx)`) se hace de forma atómica restaurando top a opacity 1 y bottom a 0 sin transición intermedia visible
+**And** la precarga de la siguiente foto (`<img src>` en bottom layer) se preserva — el cambio es solo de opacidad, no de cuándo se monta
+
+**Given** el test existente [src/__tests__/components/PhotoSlide.test.tsx](src/__tests__/components/PhotoSlide.test.tsx) (si existe en ese path o equivalente)
+**When** se actualiza para la nueva máquina de transición
+**Then** los tests existentes siguen pasando con la lógica de dos fases
+**And** se agrega al menos un test que verifica que durante la fase fade-out, la capa bottom mantiene opacity 0 (no es visible simultáneamente con la top)
+
+---
+
+### Story 7.2: BirthdayCountdown y DateDisplay — migración al panel
+
+Como usuario pasivo (Abel o Liliana),
+quiero ver los cumpleaños próximos y la fecha en una zona dedicada del panel derecho,
+para poder consultar esa información sin que se superponga con las fotos.
+
+**Acceptance Criteria:**
+
+**Given** el `SidePanel` renderizado (422px ancho)
+**When** se monta
+**Then** tiene `padding: 80px 32px 68px 32px` y `display: flex; flex-direction: column`
+**And** contiene en orden: zona reservada del reloj (320px alto, vacía por ahora) + gap 56px + `BirthdayCountdown` (380px alto) + gap 56px + `DateDisplay` (120px alto)
+
+**Given** el `BirthdayCountdown` rediseñado en el panel
+**When** se renderiza
+**Then** ya no usa `position: absolute` — es un child normal del SidePanel con layout vertical
+**And** se elimina `textAlign: 'right'`, `textShadow` y los font-sizes con clamp
+**And** cada cumpleaños se muestra en formato multilinea de 3 niveles:
+  - Línea 1: "En X días" (o "🎂 Hoy" si es hoy) — Inter 32px peso 300, color `#F5F0E8`
+  - Línea 2: "cumpleaños de" — Inter 24px peso 300, color `#F5F0E8` opacity 0.75
+  - Línea 3: nombre — Inter 40px peso 500, color `#C8956C` (frame-amber)
+**And** hay un gap vertical de ~24px entre las dos entradas (si hay 2)
+**And** la lógica existente de selección de cumpleaños próximos (filtro `daysUntil <= 30`, sort por proximidad, rotación si hay >2) **se conserva**
+
+**Given** el `DateDisplay` rediseñado en el panel
+**When** se renderiza
+**Then** ya no usa `position: absolute` — es un child normal del SidePanel
+**And** se elimina `textShadow` y el font-size con clamp
+**And** el texto es Inter 24px peso 300, color `#F5F0E8` opacity 0.7, `textAlign: 'left'`
+**And** se permite multilinea (sin `white-space: nowrap`) por si la fecha completa en español ("Miércoles, 24 de diciembre de 2026") no cabe en una línea
+**And** la lógica existente de actualización a medianoche **se conserva**
+
+**Given** el panel completo renderizado en hardware tablet 14"
+**When** se observa desde 2-3 metros
+**Then** los cumpleaños y la fecha se leen sin esfuerzo
+**And** no hay overflow horizontal en ningún elemento del panel
+
+---
+
+### Story 7.3: Soporte calendario hebreo para cumpleaños
+
+Como administrador (Ary),
+quiero poder marcar cumpleaños para que se calculen por calendario hebreo,
+para honrar las tradiciones de Abel y Liliana mostrando cumpleaños hebreos en su fecha correcta cada año.
+
+**Acceptance Criteria:**
+
+**Given** el tipo `Birthday` actual
+**When** se actualiza
+**Then** se agrega el campo `calendar: 'gregorian' | 'hebrew'` en [src/types/Birthday.ts](src/types/Birthday.ts)
+
+**Given** entries de cumpleaños existentes en `@capacitor/preferences` sin el campo `calendar`
+**When** `adminContentService.loadBirthdays()` los carga
+**Then** se les asigna `calendar: 'gregorian'` por default (migración backward-compatible sin pedirle nada al usuario)
+
+**Given** la librería `@hebcal/core` instalada
+**When** se importa
+**Then** se usa solo para conversión gregoriano ↔ hebreo (HDate.fromGregorian, conversión inversa)
+**And** se importa de forma tree-shake-friendly desde una nueva utilidad `src/utils/birthdayCalendar.ts`
+
+**Given** un cumpleaños con `calendar: 'gregorian'`
+**When** se calcula el próximo cumpleaños
+**Then** se usa la lógica existente (`daysUntilNextBirthday` — comportamiento idéntico al actual)
+
+**Given** un cumpleaños con `calendar: 'hebrew'` (e.g., nacido 1995-08-12)
+**When** se calcula el próximo cumpleaños
+**Then** se convierte 1995-08-12 a su fecha hebrea (HMonth, HDay)
+**And** se calcula cuándo cae ese día/mes hebreo en el año hebreo actual (o el siguiente si ya pasó este año)
+**And** se convierte de vuelta a gregoriano para obtener la fecha exacta del próximo cumpleaños
+**And** se retorna `{ daysUntil: N }` correctamente
+
+**Given** un cumpleaños hebreo cuyo próximo evento es en 3 días
+**When** se renderiza en KioskScreen
+**Then** se muestra normalmente "En 3 días / cumpleaños de / [nombre]" — sin indicación visual de que es hebreo (la diferencia es solo cómo se calculó, no cómo se muestra)
+
+**Given** un test unitario
+**When** se calcula el próximo cumpleaños de alguien nacido el 1990-09-25 (Yom Kippur ese año, ej.) con `calendar: 'hebrew'`
+**Then** el próximo cumpleaños cae en el día hebreo equivalente (10 de Tishrei) en el año hebreo actual o próximo
+**And** el cálculo funciona correctamente atravesando años bisiestos hebreos (Adar I / Adar II)
+
+---
+
+### Story 7.4: AdminScreen — toggle calendario gregoriano/hebreo
+
+Como administrador (Ary),
+quiero poder elegir desde el AdminScreen si un cumpleaños se calcula por calendario gregoriano o hebreo,
+para configurar correctamente los cumpleaños hebreos de la familia sin necesidad de editar archivos.
+
+**Acceptance Criteria:**
+
+**Given** el form de cumpleaños en [src/screens/AdminScreen.tsx](src/screens/AdminScreen.tsx)
+**When** se abre para crear un nuevo cumpleaños
+**Then** debajo del input de Fecha aparece un radio group con label "Calendario para cumpleaños anuales"
+**And** las dos opciones son "Gregoriano" (default seleccionado) y "Hebreo"
+**And** los radios tienen `min-height: 48px` para usabilidad táctil
+
+**Given** el radio "Hebreo" seleccionado
+**When** se observa el form
+**Then** aparece debajo del radio group un hint en Inter 13px peso 300 color frame-sepia: "El cumpleaños se mostrará en su fecha hebrea cada año (puede caer en distintas fechas gregorianas)"
+**And** el hint desaparece si se vuelve a seleccionar "Gregoriano"
+
+**Given** el form completo (nombre + fecha + calendar)
+**When** Ary presiona Guardar
+**Then** `handleSaveBirthday` persiste el cumpleaños con el campo `calendar` correspondiente
+**And** `adminContentService.saveBirthdays` escribe a `@capacitor/preferences` con la nueva estructura
+
+**Given** un cumpleaños hebreo existente
+**When** Ary lo edita
+**Then** el radio group muestra "Hebreo" pre-seleccionado y el hint visible
+**And** Ary puede cambiarlo a Gregoriano sin restricción (cambio recalcula la próxima fecha al guardar)
+
+**Given** la lista de cumpleaños en AdminScreen ([line ~695](src/screens/AdminScreen.tsx#L695))
+**When** se renderiza un cumpleaños con `calendar: 'hebrew'`
+**Then** aparece el símbolo `✡` (estrella de David, U+2721) entre el nombre y el botón Editar
+**And** el símbolo tiene `color: frame-amber opacity: 0.6 font-size: 14px margin-left: 8px`
+**And** los cumpleaños gregorianos NO muestran ningún símbolo (gregoriano = sin marcador)
+
+**Given** los tests existentes de AdminScreen
+**When** se actualizan
+**Then** los tests siguen pasando
+**And** se agrega al menos un test que verifica que crear un cumpleaños hebreo lo persiste con `calendar: 'hebrew'`
+**And** se agrega un test que verifica que el símbolo ✡ aparece para cumpleaños hebreos en la lista
+
+---
+
+### Story 7.5 (opcional/diferida): Reloj en el panel
+
+**Estado:** decisión diferida. Owner revisa el frame con Stories 7.1-7.4 implementadas y decide A (sin reloj), B (digital pequeño) o C (análogo grande). Specs detalladas en UX spec → "Reloj — decisión diferida".
+
+No bloquea entrega del 2026-05-25.
+

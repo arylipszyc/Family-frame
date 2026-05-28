@@ -1247,3 +1247,346 @@ android:screenOrientation="landscape"
 <input id="birthday-name" type="text" aria-required="true" />
 <button aria-label="Eliminar cumpleaños de Sofía">Eliminar</button>
 ```
+
+---
+
+# NS-8 Layout Redesign Addendum
+
+**Autora:** Sally (UX Designer)
+**Fecha:** 2026-05-19
+**Estado:** Override sobre la dirección original D3 — Mural
+
+## Contexto del cambio
+
+La dirección original (**D3 — Mural**, texto flotando sobre la foto) fue validada en hardware el 2026-05-16/18 y entregó un producto funcional. Sin embargo, surgió un problema visual real: **las fotos verticales dejan bandas negras laterales grandes** (sobre 1920×1080, una foto 9:16 deja ~656px a cada lado). Ese "espacio negro" rompe la sensación de cuadro.
+
+Ary, como owner del producto, pidió rediseño: split layout (foto izquierda, panel derecha), cumpleaños fuera de la foto, soporte calendario hebreo por cumpleaños, y reloj análogo semi-transparente. La discovery con hardware real validó que el cambio vale la pena.
+
+**Trade-off explícito que aceptamos:** las fotos NO se cropean. En lugar de cover con crop, usamos `object-fit: contain` en una foto zone de proporción **1.39:1** (1498×1080). Las bandas naturales que aparecen cuando una foto no llena exactamente esa proporción (chicas arriba/abajo en 16:9, chicas a los lados en 4:3, más anchas a los lados en verticales) **NO son negras** — son del mismo degradado cálido del panel, leyéndose como passe-partout o "mat" de un cuadro enmarcado. El espacio "vacío" se transforma en marco intencional, no en hueco.
+
+**Override sobre decisiones anteriores:**
+- Se reemplaza la sección **"Design Direction Decision → KioskScreen: D3 — Mural"** por la dirección **Split 78/22 con backdrop cálido** descrita acá abajo.
+- Se reemplaza el layout ASCII de la sección **"Spacing & Layout Foundation"** por el de acá.
+- Se reemplazan las specs de posicionamiento de `BirthdayCountdown` y `DateDisplay` en **"Component Strategy"** por las de acá. **`YiddishPhrase` no cambia** — permanece sobre la foto en su posición actual (esquina inferior izquierda, layout D3 con gradiente protector y text-shadow).
+- WelcomeScreen (W2 — Dramático) **no cambia**. Solo se rediseña KioskScreen.
+
+## Decisión de dirección — Split 78/22 con backdrop cálido
+
+```
+┌────────────────────────────────────────────────────────────┐
+│   ░░░░░░ banda warm-dark (si foto no fill) ░░░░░░  │       │
+│   ░  ┌──────────────────────────────────────────┐  │   ┌─┐ │
+│   ░  │                                          │  │   │R│ │
+│   ░  │         FOTO (object-fit: contain)       │  │   │e│ │
+│   ░  │                                          │  │   │l│ │
+│   ░  │         se preserva entera, sin crop     │  │   │o│ │
+│   ░  │                                          │  │   │j│ │
+│   ░  │         paper overlay sin cambios        │  │   └─┘ │
+│   ░  │                                          │  │       │
+│   ░  │   ┌─────────────────┐                    │  │  En 3 │
+│   ░  │   │ Yiddish (D3)    │                    │  │  días │
+│   ░  │   │ Transliteración │                    │  │  Sofía│
+│   ░  │   │ Traducción      │                    │  │       │
+│   ░  │   └─────────────────┘                    │  │  En 12│
+│   ░  │                                          │  │  días │
+│   ░  └──────────────────────────────────────────┘  │  David│
+│   ░░░░░░ banda warm-dark (si foto no fill) ░░░░░░  │       │
+│                                                    │  Lunes│
+│         FOTO ZONE 1498×1080 (78%)                  │ 19 may│
+│         backdrop: warm gradient (no negro)         │ PANEL │
+│         ←─── transición 60px ──→                   │ 422×  │
+│                                                    │ 1080  │
+└────────────────────────────────────────────────────────────┘
+```
+
+**Resolución target:** 1920×1080 landscape.
+**Foto zone:** 1498px wide × 1080px tall (78% del width), proporción 1.39:1.
+**Panel zone:** 422px wide × 1080px tall (22% del width).
+**Borde:** sin línea divisoria. Degradado horizontal de 60px de ancho entre la foto zone y el panel — ambos con el mismo color base, transición invisible.
+
+### Comportamiento de la foto
+
+- `object-fit: contain` **se conserva igual** que el comportamiento actual (no se cropean fotos).
+- **Backdrop de la foto zone:** degradado cálido vertical `#1A1210` (top) → `#1F1813` (bottom). **No es negro.** Esto es el cambio clave respecto del actual — donde la foto no llena la zona, el ojo lee "passe-partout cálido" en vez de "espacio negro vacío".
+- Paper overlay (`filter: saturate(0.85) brightness(0.95) sepia(0.08)` + linen 6%) **se conserva igual** sobre la foto.
+- Pixel shifting (`±1-2px` cada 3min) **se conserva igual**, pero ahora se aplica al **container raíz** que contiene foto+panel — no solo a la foto. Eso mantiene consistencia visual y previene burn-in también del panel.
+
+**Comportamiento por tipo de foto:**
+
+| Tipo de foto | Resultado en la foto zone 1498×1080 |
+|--------------|--------------------------------------|
+| Horizontal 16:9 | Foto a width completo (1498), bandas warm-dark ~118px arriba/abajo |
+| Horizontal 4:3 | Foto a height completo (1080), bandas warm-dark ~29px a cada lado — casi fill |
+| Cuadrada 1:1 | Foto a height 1080, bandas warm-dark ~209px a cada lado |
+| Vertical 9:16 | Foto a height 1080, bandas warm-dark ~445px a cada lado — efecto retrato enmarcado |
+
+### Panel — composición vertical
+
+Total alto: 1080px. Distribución de arriba a abajo:
+
+| Zona | Alto | Contenido | Notas |
+|------|------|-----------|-------|
+| Padding top | 80px | — | aire desde el borde superior |
+| **Zona reservada — Reloj** | 320px | (deferred — ver "Reloj" abajo) | Si se omite, las zonas siguientes pueden expandirse |
+| Gap | 56px | — | |
+| **Zona Cumpleaños** | 380px | Hasta 2 cumpleaños próximos | Inter, formato multilinea |
+| Gap | 56px | — | |
+| **Zona Fecha** | 120px | "Lunes, 19 de mayo de 2026" — multilinea OK | Inter discreta |
+| Padding bottom | 68px | — | |
+
+Total: 80+320+56+380+56+120+68 = **1080px** ✓
+
+**Padding horizontal del panel:** 32px izquierda y derecha → content width = **358px**.
+**Background del panel:** degradado vertical sutil `#1A1210` (top) → `#1F1813` (bottom) con paper texture overlay 4% opacity (consistente con la foto zone). Como ambas zonas comparten el mismo gradiente, la transición es invisible.
+
+### Tipografía dentro del panel
+
+Cambios respecto del kiosk actual (ajuste por ancho de 358px):
+
+| Elemento | Antes (full-screen) | Ahora (panel 358px) |
+|----------|--------------------|--------------------|
+| Cumpleaños — "En X días" | `clamp(28px, 3vw, 42px)` Inter 500 | **32px Inter 300** (línea 1, label) |
+| Cumpleaños — "cumpleaños de" | (mismo bloque) | **24px Inter 300 opacity 0.75** (línea 2) |
+| Cumpleaños — nombre | (mismo bloque, color amber) | **40px Inter 500 color frame-amber** (línea 3) |
+| Fecha | `clamp(22px, 2.5vw, 32px)` Inter 300 | **24px Inter 300 opacity 0.7** (fijo) |
+
+**Cambio de formato del cumpleaños — pasamos de una línea a tres:**
+
+Antes (kiosk actual, una sola línea):
+```
+En 3 días: cumpleaños de Sofía
+```
+
+Ahora (panel 358px, tres líneas):
+```
+En 3 días                ← 32px Inter 300
+cumpleaños de            ← 24px Inter 300 op. 0.75
+Sofía                    ← 40px Inter 500 frame-amber
+```
+
+**Justificación:** "En 3 días: cumpleaños de Sofía" a 32px = ~480px de width, no entra en 358px. Dividir en 3 líneas con jerarquía interna (días → contexto → nombre como protagonista) **mejora** la lectura a 2-3m: el ojo lee la magnitud del tiempo, después el contexto, después la cara/nombre.
+
+**Variante "hoy":**
+```
+🎂 Hoy                   ← 32px Inter 300
+cumpleaños de            ← 24px Inter 300 op. 0.75
+Sofía                    ← 40px Inter 500 frame-amber
+```
+
+**Justificación del cambio de `clamp(…)` a tamaños fijos:** el panel tiene ancho conocido (422px). No hay razón para tamaño viewport-relativo dentro de él.
+
+**`text-shadow`** ya no es necesario en componentes del panel (fondo controlado, no hay foto debajo). Se elimina en `BirthdayCountdown` y `DateDisplay`. `YiddishPhrase` lo conserva (sigue sobre foto).
+
+### Color tokens — sin cambios
+
+Toda la paleta existente (`frame-cream`, `frame-amber`, `frame-sepia`, `frame-charcoal`, `frame-night`, `frame-paper`) se reutiliza. No se necesitan tokens nuevos para NS-8 base.
+
+## Reloj — decisión diferida
+
+Owner deja la decisión del reloj para **después** de ver el layout sin reloj. Tres caminos posibles:
+
+| Opción | Cuándo elegirla | Spec resumen |
+|--------|----------------|--------------|
+| **(A) Sin reloj** | Si el panel ya se ve completo y cálido sin él | Zona reservada (320px) se redistribuye: Cumpleaños crece a 540px, Fecha a 160px |
+| **(B) Reloj digital pequeño** | Si falta algo pero no querés pelear con un análogo | `HH:MM` en Inter 96px frame-cream opacity 0.9, centrado. Ocupa los 320px reservados, sobra padding |
+| **(C) Reloj análogo grande** | Si el panel se ve vacío y querés el "respirar" análogo | Ø 280px, líneas amber 0.7, manecillas cream, sin segundero, 4 marcas (12-3-6-9), centro vacío. Ocupa la zona reservada de 320px |
+
+**Recomendación de Sally:** dejar la zona reservada vacía durante el primer build, ver cómo se ve, y decidir A/B/C en review visual. Esto evita gastar tiempo de Amelia speculativamente.
+
+**Si se elige (C) — reloj análogo**, spec implementable:
+
+```
+Diámetro:          280px
+Centro:            vacío (no hub)
+Marcas:            4 marcas (12, 3, 6, 9) — line 2px, color frame-amber opacity 0.5
+Borde:             círculo 1px frame-amber opacity 0.3
+Manecilla hora:    longitud 80px, grosor 6px, color frame-cream opacity 0.9
+Manecilla minuto:  longitud 110px, grosor 4px, color frame-cream opacity 0.7
+Segundero:         NO (sin urgencia)
+Update:            cada 30s (suficiente para minuto preciso, sin gasto CPU)
+Implementación:    SVG inline o CSS transforms
+```
+
+## AdminScreen — Calendario hebreo por cumpleaños
+
+### Cambio en el modelo de datos
+
+Tipo `Birthday` actual:
+```typescript
+export interface Birthday {
+  id: string
+  name: string
+  date: string  // YYYY-MM-DD gregoriano
+}
+```
+
+Tipo `Birthday` propuesto:
+```typescript
+export interface Birthday {
+  id: string
+  name: string
+  date: string  // YYYY-MM-DD — sigue siendo la fecha gregoriana de nacimiento
+  calendar: 'gregorian' | 'hebrew'  // default 'gregorian' al migrar
+}
+```
+
+**Decisión clave de modelo:** la fecha de nacimiento se almacena siempre en gregoriano (`date`). El campo `calendar` indica **cómo calcular el próximo cumpleaños**:
+- `gregorian`: misma fecha cada año (comportamiento actual).
+- `hebrew`: convertir la fecha gregoriana de nacimiento a su equivalente hebreo (mes y día hebreos), luego encontrar cuándo cae ese día/mes hebreo en el año gregoriano actual o próximo. Eso es el próximo cumpleaños.
+
+**Migración:** todas las entradas existentes se cargan con `calendar: 'gregorian'` por default (compatibilidad backward).
+
+### Lógica de cálculo
+
+```
+calcularProximoCumpleaños(birthday):
+  if calendar == 'gregorian':
+    [comportamiento actual — daysUntilNextBirthday existente, sin cambios]
+
+  if calendar == 'hebrew':
+    1. Convertir birthday.date (gregoriano) → fecha hebrea {hMonth, hDay}
+       usando @hebcal/core: HDate.fromGregorian(birthday.date)
+    2. Para el año hebreo actual: convertir {hMonth, hDay, currentHebrewYear} a gregoriano
+    3. Si esa fecha gregoriana ya pasó (es < hoy):
+       repetir paso 2 con currentHebrewYear + 1
+    4. Calcular días entre hoy y esa fecha gregoriana resultante
+    5. Retornar { daysUntil: N, gregorianDateThisYear: '2026-MM-DD' }
+```
+
+**Librería:** `@hebcal/core` (npm). MIT license, sin deps nativas, ~80KB. Soporta conversión bidireccional gregoriano ↔ hebreo robusta (incluye años bisiestos hebreos).
+
+**Display en KioskScreen:** sin cambios visibles. Sigue diciendo "En 3 días: cumpleaños de Sofía". La complejidad vive en el cálculo, no en la UI.
+
+### UI del toggle en AdminScreen — form de cumpleaños
+
+El form actual de cumpleaños en [AdminScreen.tsx](src/screens/AdminScreen.tsx) tiene:
+- Input `Nombre`
+- Input `Fecha` (YYYY-MM-DD validado por regex)
+- Botones Guardar / Cancelar
+
+**Adición:** un radio group entre Fecha y los botones.
+
+```
+┌─────────────────────────────────────────────┐
+│  Editar cumpleaños                          │
+│                                             │
+│  Nombre                                     │
+│  [Sofía                              ]      │
+│                                             │
+│  Fecha de nacimiento                        │
+│  [1995-08-12                         ]      │
+│  Formato: AAAA-MM-DD                        │
+│                                             │
+│  Calendario para cumpleaños anuales         │
+│  ◉ Gregoriano   ◯ Hebreo                    │
+│  ↳ El cumpleaños se mostrará en su fecha    │
+│    hebrea cada año (puede caer en distintas │
+│    fechas gregorianas)  ← hint solo si      │
+│                            Hebreo activo    │
+│                                             │
+│         [Cancelar]      [Guardar]           │
+└─────────────────────────────────────────────┘
+```
+
+**Specs del radio group:**
+- Container `display: flex; gap: 24px; align-items: center` debajo del input Fecha
+- Cada radio: input native + label, `gap: 8px` entre input y label
+- Label: `Inter 16px 500 color: frame-cream`
+- Radio default seleccionado al crear nuevo cumpleaños: `gregorian`
+- Hint condicional aparece solo cuando `calendar === 'hebrew'`. Estilo: `Inter 13px 300 color: frame-sepia line-height: 1.5 margin-top: 8px max-width: 480px`
+
+**Validación:** la lib `@hebcal/core` no falla con fechas válidas. La validación del formato YYYY-MM-DD ya existente (`DATE_REGEX`) sigue siendo suficiente.
+
+### Visualización del calendario hebreo en la lista de cumpleaños (AdminScreen)
+
+En la lista de cumpleaños de AdminScreen ([line ~695](src/screens/AdminScreen.tsx#L695)), agregar un indicador visual sutil al lado de cada item con calendario hebreo:
+
+```
+Sofía — 1995-08-12 [Editar] [Eliminar]              ← gregoriano (sin indicador)
+David — 1992-05-18 ✡ [Editar] [Eliminar]            ← hebreo (con símbolo discreto)
+```
+
+Símbolo `✡` (estrella de David U+2721) en `frame-amber opacity 0.6 font-size 14px margin-left 8px`. Es marca de identidad cultural, no decoración: indica que ESE cumpleaños se calcula por calendario hebreo.
+
+## Migración de componentes existentes — Resumen del impacto
+
+| Componente | Cambio requerido |
+|------------|-----------------|
+| [KioskScreen.tsx](src/screens/KioskScreen.tsx) | Reestructurar en dos zonas: `<PhotoZone>` (izquierda 78%) + `<SidePanel>` (derecha 22%). Pixel shift se aplica al container raíz, no a PhotoSlide individualmente. **YiddishPhrase queda DENTRO de PhotoZone** (sigue siendo overlay sobre la foto). |
+| [PhotoSlide.tsx](src/components/PhotoSlide.tsx) | **`objectFit: 'contain'` se conserva.** Cambios: el container pasa de `position: fixed; inset: 0` a `position: absolute; inset: 0` dentro del PhotoZone. **Cambiar `backgroundColor: '#1A1210'` por degradado warm** `linear-gradient(to bottom, #1A1210, #1F1813)` — sustituye el negro plano por el degradado cálido del passe-partout. **Cambiar máquina de transición de reveal-by-fade a fade-through-passe-partout** (dos fases secuenciales de 1250ms cada una: outgoing 1→0, luego incoming 0→1; nunca ambas visibles simultáneamente) — soluciona el overlap visible cuando fotos consecutivas tienen distinto aspect ratio. |
+| [YiddishPhrase.tsx](src/components/YiddishPhrase.tsx) | **SIN CAMBIOS funcionales** — sigue posicionado `position: absolute; bottom: 2.5vh; left: 2.5vw` dentro del PhotoZone (coordenadas son relativas al ancestor positioned, que pasa a ser PhotoZone en lugar del viewport). Mantiene Playfair clamp(40px,4vw,64px), gradiente protector, text-shadow. |
+| [BirthdayCountdown.tsx](src/components/BirthdayCountdown.tsx) | Eliminar `position: absolute`. Eliminar `text-align: right`. Eliminar text-shadow. **Reescribir `BirthdayLine` con layout multilinea de 3 niveles** (32px Inter 300 / 24px Inter 300 op. 0.75 / 40px Inter 500 frame-amber). Dejarlo como child normal del SidePanel con flex-column. |
+| [DateDisplay.tsx](src/components/DateDisplay.tsx) | Eliminar `position: absolute`. Eliminar text-shadow. Tamaño fijo 24px (no clamp). `text-align: left`. Permitir multilinea si la fecha larga no entra. |
+| [Birthday.ts](src/types/Birthday.ts) | Agregar campo `calendar: 'gregorian' \| 'hebrew'`. |
+| `adminContentService.ts` | Migrar entries existentes con `calendar: 'gregorian'` al cargar (si el campo está ausente). |
+| Nueva utilidad | `src/utils/birthdayCalendar.ts` con función `calculateNextBirthday(birthday: Birthday): { daysUntil, displayDate }`. Importa `@hebcal/core` solo si el cumpleaños es hebreo (tree-shake-friendly). |
+| [AdminScreen.tsx](src/screens/AdminScreen.tsx) | Agregar radio group al form de cumpleaños. Mostrar símbolo ✡ en lista. Pasar `calendar` en `handleSaveBirthday`. |
+
+## Layout — implementación CSS sugerida (referencia, no normativa)
+
+```tsx
+// KioskScreen rediseñado
+<div style={rootContainerStyle /* pixel shift se aplica acá */}>
+  <PhotoZone>
+    <PhotoSlide photos={photos} intervalMs={...} />
+    <YiddishPhrase phrases={yiddishPhrases} />  {/* sigue sobre la foto */}
+    <NightModeOverlay />
+  </PhotoZone>
+  <SidePanel>
+    {/* zona reloj — vacía por ahora */}
+    <BirthdayCountdown birthdays={birthdays} rotationSlot={rotationSlot} />
+    <DateDisplay />
+  </SidePanel>
+  <GestureDetector onGestureDetected={...} />
+  <PinEntry ... />
+</div>
+```
+
+```tsx
+// Layout shell
+const rootContainerStyle: CSSProperties = {
+  position: 'fixed', inset: '-3px',  // pixel shift container — se conserva
+  display: 'flex', flexDirection: 'row',
+  overflow: 'hidden',
+  background: 'linear-gradient(to bottom, #1A1210, #1F1813)',  // base unificada
+}
+
+const photoZoneStyle: CSSProperties = {
+  position: 'relative',  // contiene PhotoSlide y YiddishPhrase en absolute
+  width: '78%', height: '100%',
+  // sin backgroundColor propio — hereda el degradado del root
+}
+
+const sidePanelStyle: CSSProperties = {
+  width: '22%', height: '100%',
+  // sin backgroundColor propio — hereda el degradado del root
+  display: 'flex', flexDirection: 'column',
+  padding: '80px 32px 68px 32px',
+  position: 'relative',
+}
+```
+
+**Nota a Amelia sobre PhotoSlide:** el componente actual usa `position: fixed; inset: 0; backgroundColor: '#1A1210'` (foto a viewport completo, negro detrás). Al meterlo dentro del PhotoZone, cambiar a `position: absolute; inset: 0`, eliminar `backgroundColor` propio (que herede del root unified gradient). Eso es todo lo necesario para que la foto y la passe-partout cálida convivan correctamente. `object-fit: contain` y todos los filtros se quedan iguales.
+
+**Nota a Amelia sobre dimensiones:** los porcentajes 78/22 son robustos a cambios de resolución (tablet específica puede ser 1920×1200 en lugar de 1920×1080 — los porcentajes adaptan). Pero los tamaños de fuente del panel son fijos en px, no clamp. Si en el hardware real las fuentes quedan grandes/chicas, ajustar 1-2 valores en revisión visual.
+
+## Tests visuales en hardware — checklist post-implementación
+
+Antes de aprobar la story como completa, validar en tablet 14":
+
+- [ ] Una foto horizontal 16:9 se preserva entera (no se cropea); las bandas warm-dark arriba/abajo se leen como passe-partout, no como espacio vacío
+- [ ] Una foto horizontal 4:3 se ve casi fill (bandas mínimas a los lados)
+- [ ] Una foto vertical 9:16 se ve como retrato enmarcado con bandas warm-dark a los lados (no negras)
+- [ ] La frase Yiddish sigue legible sobre las fotos (el text-shadow y gradiente protector se preservan)
+- [ ] El panel se lee desde 2-3 metros sin esfuerzo (cumpleaños y fecha)
+- [ ] Los 2 cumpleaños próximos en formato multilinea caben sin overflow horizontal
+- [ ] La fecha "Lunes, 19 de mayo de 2026" cabe en máximo 2 líneas (test en mes largo: "diciembre")
+- [ ] La transición foto-zone → panel es invisible (mismo gradiente compartido, no se ve línea)
+- [ ] La transición entre dos fotos de aspect ratio diferente (vertical → horizontal) ya no muestra ambas superpuestas a la vez — hay un instante breve de solo passe-partout entre ellas
+- [ ] Crear un cumpleaños hebreo desde AdminScreen y verificar que aparezca con su fecha hebrea correcta
+- [ ] Editar un cumpleaños existente para cambiarlo de gregoriano a hebreo y verificar el cálculo
+- [ ] El símbolo ✡ aparece junto a cumpleaños hebreos en la lista admin
+
+## Decisiones diferidas — registro
+
+1. **Reloj — A/B/C:** decisión post-implementación del layout base. Owner revisa el frame sin reloj y decide. No bloquea Stories 7.1 a 7.4.
