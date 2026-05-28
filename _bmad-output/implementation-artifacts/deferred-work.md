@@ -1,5 +1,10 @@
 # Deferred Work
 
+## Infra (2026-05-28): firma de release y ubicación de datos
+
+- **Firmar las builds con el keystore de release fijo** — Hoy `android/app/build.gradle` no define un `signingConfig` de release, así que las builds salen firmadas con el `debug.keystore` de la máquina. Como ese keystore puede regenerarse/diferir entre máquinas, una build nueva NO se puede instalar como actualización sobre la app existente (`INSTALL_FAILED_UPDATE_INCOMPATIBLE: signatures do not match`) → obliga a desinstalar (perdiendo los datos locales: cumpleaños, config, PIN, caché de fotos). **Fix:** configurar un `signingConfig` release que use `family-frame-keystore.jks` y firmar SIEMPRE con él; así las futuras actualizaciones entran in-place sin desinstalar ni perder datos. Scope: infra de build / release. (Bloqueó el deploy del 2026-05-28; se resolvió con uninstall + reinstall + restore vía bootstrap.)
+- **Ubicación de toda la data y credenciales del proyecto:** `G:\My Drive\family-frame` — contiene `family-frame-keystore.jks` (keystore release), `sa-config.json` (Service Account de Drive), `drive-folder-config.json` (`folderId` de la carpeta de fotos), `yiddish-phrases.json`, `Frases Yiddish.xlsx` y `family-frame-fotos/`. Flujo recurrente para cargar datos en el tablet sin tipear: dejar `sa-config.json` / `drive-folder-config.json` / `yiddish-phrases.json` / `birthdays.json` en `/sdcard/Android/data/com.familyframe.app/files/` (vía `adb push`) y reiniciar la app — cada servicio de bootstrap los importa y borra el archivo.
+
 ## Deferred from: code review de 6-3-kiosk-mode (2026-04-15)
 
 - **Race condition: kioskEnabled default=true antes de isInKioskMode() resuelva** — AdminScreen inicializa kioskEnabled=true síncronamente, luego async `isInKioskMode()` corrige el valor. Ventana teórica donde el botón incorrecto se muestra. En práctica inocuo: AdminScreen requiere gesture+PIN (varios segundos). Scope: hardening si se agrega loading state en Epic futuro.

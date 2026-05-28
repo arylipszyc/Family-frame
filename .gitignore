@@ -54,6 +54,9 @@ android/capacitor.settings.gradle
 # Dev-only test photos (seeded in contentStore when DEV=true)
 public/test-photos/
 
+# Respaldo local de datos personales (fuente canónica en G:\My Drive\family-frame)
+cumpleanos-backup.json
+
 # Environment — all variants
 .env
 .env.local
