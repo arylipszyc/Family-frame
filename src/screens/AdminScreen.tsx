@@ -143,6 +143,9 @@ const secondaryBtnStyle: CSSProperties = {
 
 const DATE_REGEX  = /^\d{4}-\d{2}-\d{2}$/
 const HH_MM_REGEX = /^([01][0-9]|2[0-3]):[0-5][0-9]$/
+// PinEntry (kiosk) solo emite PINs de exactamente 4 dígitos numéricos — guardar
+// cualquier otra cosa dejaría el admin inaccesible para siempre.
+const PIN_REGEX   = /^\d{4}$/
 
 function isDuplicate(phrase: YiddishPhrase, list: YiddishPhrase[]): boolean {
   return list.some(
@@ -586,13 +589,19 @@ export function AdminScreen() {
   // ── PIN ──────────────────────────────────────────────────────────────────────
 
   const handleSavePin = useCallback(async () => {
+    const trimmedNew = newPin.trim()
     const errors = {
       current: currentPin.trim() === '',
-      newPin:  newPin.trim() === '' || newPin !== confirmPin,
+      newPin:  !PIN_REGEX.test(trimmedNew) || newPin !== confirmPin,
       confirm: confirmPin.trim() === '' || newPin !== confirmPin,
     }
     setPinErrors(errors)
-    if (errors.current || errors.newPin || errors.confirm) return
+    if (errors.current || errors.newPin || errors.confirm) {
+      if (trimmedNew !== '' && !PIN_REGEX.test(trimmedNew)) {
+        showToast('El PIN debe tener exactamente 4 dígitos', SEPIA)
+      }
+      return
+    }
 
     try {
       const ok = await pinService.verifyPin(currentPin.trim())  // P4: trim antes de verificar
@@ -1085,7 +1094,7 @@ export function AdminScreen() {
                 <input
                   type="password"
                   style={{ ...inputStyle, ...(pinErrors.newPin ? { border: `2px solid ${AMBER}` } : {}) }}
-                  placeholder="PIN nuevo"
+                  placeholder="PIN nuevo (4 dígitos)"
                   value={newPin}
                   onChange={(e) => { setNewPin(e.target.value); setPinErrors((prev) => ({ ...prev, newPin: false, confirm: false })) }}
                   data-testid="input-new-pin"

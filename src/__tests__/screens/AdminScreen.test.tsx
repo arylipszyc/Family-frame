@@ -594,6 +594,31 @@ describe('AdminScreen — Sección Configuración: cambio de PIN', () => {
     expect(mockPinService.verifyPin).not.toHaveBeenCalled()
   })
 
+  it('rechaza PIN nuevo que no sea de exactamente 4 dígitos (evita lockout del kiosk)', async () => {
+    const { getByTestId } = render(<AdminScreen />)
+    for (const invalid of ['123', '12345', '12a4', 'abcd']) {
+      fireEvent.change(getByTestId('input-current-pin'), { target: { value: '1234' } })
+      fireEvent.change(getByTestId('input-new-pin'),     { target: { value: invalid } })
+      fireEvent.change(getByTestId('input-confirm-pin'), { target: { value: invalid } })
+      fireEvent.click(getByTestId('btn-save-pin'))
+    }
+    expect(mockPinService.verifyPin).not.toHaveBeenCalled()
+    expect(mockPinService.setPin).not.toHaveBeenCalled()
+    // Borde de error en el campo de PIN nuevo + toast explicativo
+    expect((getByTestId('input-new-pin') as HTMLInputElement).style.border).toContain('200, 149, 108')
+    await waitFor(() => expect(getByTestId('toast').textContent).toContain('4 dígitos'))
+  })
+
+  it('acepta PIN nuevo de exactamente 4 dígitos', async () => {
+    mockPinService.verifyPin.mockResolvedValue(true)
+    const { getByTestId } = render(<AdminScreen />)
+    fireEvent.change(getByTestId('input-current-pin'), { target: { value: '1234' } })
+    fireEvent.change(getByTestId('input-new-pin'),     { target: { value: '0912' } })
+    fireEvent.change(getByTestId('input-confirm-pin'), { target: { value: '0912' } })
+    fireEvent.click(getByTestId('btn-save-pin'))
+    await waitFor(() => expect(mockPinService.setPin).toHaveBeenCalledWith('0912'))
+  })
+
   it('aplica borde amber en PIN actual incorrecto (respuesta del servidor)', async () => {
     mockPinService.verifyPin.mockResolvedValue(false)
     const { getByTestId } = render(<AdminScreen />)
