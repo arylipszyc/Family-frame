@@ -10,7 +10,9 @@ async function trySync(): Promise<void> {
   const { syncStatus } = useSyncStore.getState()
   if (syncStatus === 'syncing') return
   const isAuth = await driveAuthService.isAuthenticated()
-  if (isAuth) driveSyncService.sync()   // fire-and-forget
+  // Fire-and-forget: sync() ya setea syncStatus 'error' y loguea; el catch
+  // evita un unhandled promise rejection en cada auto-sync fallido.
+  if (isAuth) driveSyncService.sync().catch(() => {})
 }
 
 /**
