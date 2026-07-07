@@ -8,9 +8,10 @@ const { mockPreferences, mockFilesystem } = vi.hoisted(() => ({
     get: vi.fn().mockResolvedValue({ value: null }),
   },
   mockFilesystem: {
-    writeFile: vi.fn().mockResolvedValue(undefined),
-    stat:      vi.fn().mockResolvedValue({}),
-    getUri:    vi.fn().mockResolvedValue({ uri: 'file:///data/photos/photo1.jpg' }),
+    writeFile:  vi.fn().mockResolvedValue(undefined),
+    deleteFile: vi.fn().mockResolvedValue(undefined),
+    stat:       vi.fn().mockResolvedValue({}),
+    getUri:     vi.fn().mockResolvedValue({ uri: 'file:///data/photos/photo1.jpg' }),
   },
 }))
 
@@ -113,6 +114,49 @@ describe('photoCacheService', () => {
     it('returns true after saving a photo', async () => {
       await photoCacheService.savePhoto('photo2', makeBlob())
       expect(photoCacheService.hasPhoto('photo2')).toBe(true)
+    })
+  })
+
+  // ── deletePhoto / getCachedIds ─────────────────────────────────────────────
+
+  describe('deletePhoto', () => {
+    it('removes file from disk, index and persists the updated index', async () => {
+      await photoCacheService.savePhoto('doomed', makeBlob())
+      expect(photoCacheService.hasPhoto('doomed')).toBe(true)
+
+      await photoCacheService.deletePhoto('doomed')
+
+      expect(mockFilesystem.deleteFile).toHaveBeenCalledWith({
+        path: 'photos/doomed.jpg',
+        directory: 'DATA',
+      })
+      expect(photoCacheService.hasPhoto('doomed')).toBe(false)
+      const lastSet = mockPreferences.set.mock.calls.at(-1)![0]
+      expect(JSON.parse(lastSet.value)).toEqual([])
+    })
+
+    it('removes the index entry even if the file is already gone from disk', async () => {
+      await photoCacheService.savePhoto('ghost', makeBlob())
+      mockFilesystem.deleteFile.mockRejectedValueOnce(new Error('File does not exist'))
+
+      await expect(photoCacheService.deletePhoto('ghost')).resolves.toBeUndefined()
+
+      expect(photoCacheService.hasPhoto('ghost')).toBe(false)
+    })
+
+    it('is a no-op for unknown ids', async () => {
+      await photoCacheService.deletePhoto('never-existed')
+      expect(mockFilesystem.deleteFile).not.toHaveBeenCalled()
+      expect(mockPreferences.set).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('getCachedIds', () => {
+    it('returns the ids currently in the index', async () => {
+      expect(photoCacheService.getCachedIds()).toEqual([])
+      await photoCacheService.savePhoto('a', makeBlob())
+      await photoCacheService.savePhoto('b', makeBlob())
+      expect(photoCacheService.getCachedIds()).toEqual(['a', 'b'])
     })
   })
 

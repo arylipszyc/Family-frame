@@ -13,6 +13,8 @@ const { mockFetch, mockPreferences, mockDriveAuth, mockPhotoCache } = vi.hoisted
     hasPhoto:           vi.fn().mockReturnValue(false),
     savePhoto:          vi.fn().mockResolvedValue(undefined),
     getAllCachedPhotos: vi.fn().mockResolvedValue([]),
+    getCachedIds:       vi.fn().mockReturnValue([]),
+    deletePhoto:        vi.fn().mockResolvedValue(undefined),
   },
 }))
 
@@ -61,6 +63,7 @@ describe('driveSyncService', () => {
     mockPreferences.get.mockResolvedValue({ value: 'folder-abc-123' })
     mockDriveAuth.getAccessToken.mockResolvedValue('valid-token')
     mockPhotoCache.hasPhoto.mockReturnValue(false)
+    mockPhotoCache.getCachedIds.mockReturnValue([])
   })
 
   it('returns early with 0 when folderId is not configured', async () => {
@@ -163,14 +166,49 @@ describe('driveSyncService', () => {
 
   it('does nothing when no new files, returns 0', async () => {
     mockPhotoCache.hasPhoto.mockReturnValue(true)
+    mockPhotoCache.getCachedIds.mockReturnValue(['file-old'])
     mockListResponse([{ id: 'file-old' }])
 
     const count = await driveSyncService.sync()
 
     expect(count).toBe(0)
     expect(mockPhotoCache.savePhoto).not.toHaveBeenCalled()
+    expect(mockPhotoCache.deletePhoto).not.toHaveBeenCalled()
     expect(mockPhotoCache.getAllCachedPhotos).not.toHaveBeenCalled()
     expect(useSyncStore.getState().syncStatus).toBe('idle')
+  })
+
+  it('deletes cached photos that no longer exist in Drive and refreshes the store', async () => {
+    mockPhotoCache.hasPhoto.mockReturnValue(true)
+    mockPhotoCache.getCachedIds.mockReturnValue(['keep-1', 'gone-1', 'gone-2'])
+    mockListResponse([{ id: 'keep-1' }])
+    const remaining = [{ id: 'keep-1', localPath: 'file:///photos/keep-1.jpg', syncedAt: '' }]
+    mockPhotoCache.getAllCachedPhotos.mockResolvedValueOnce(remaining)
+
+    const count = await driveSyncService.sync()
+
+    expect(count).toBe(0)
+    expect(mockPhotoCache.deletePhoto).toHaveBeenCalledTimes(2)
+    expect(mockPhotoCache.deletePhoto).toHaveBeenCalledWith('gone-1')
+    expect(mockPhotoCache.deletePhoto).toHaveBeenCalledWith('gone-2')
+    expect(mockPhotoCache.deletePhoto).not.toHaveBeenCalledWith('keep-1')
+    expect(useContentStore.getState().photos).toEqual(remaining)
+    expect(useSyncStore.getState().syncStatus).toBe('idle')
+  })
+
+  it('handles adds and removals in the same sync', async () => {
+    mockPhotoCache.hasPhoto.mockImplementation((id: string) => id === 'old')
+    mockPhotoCache.getCachedIds.mockReturnValue(['old', 'gone'])
+    mockListResponse([{ id: 'old' }, { id: 'new' }])
+    mockDownload()
+    mockPhotoCache.getAllCachedPhotos.mockResolvedValueOnce([])
+
+    const count = await driveSyncService.sync()
+
+    expect(count).toBe(1)
+    expect(mockPhotoCache.savePhoto).toHaveBeenCalledWith('new', expect.any(Blob))
+    expect(mockPhotoCache.deletePhoto).toHaveBeenCalledOnce()
+    expect(mockPhotoCache.deletePhoto).toHaveBeenCalledWith('gone')
   })
 
   it('sets syncStatus to error and re-throws on list API error', async () => {

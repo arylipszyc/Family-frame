@@ -88,4 +88,22 @@ export const photoCacheService = {
   hasPhoto(id: string): boolean {
     return cacheIndex.has(id)
   },
+
+  /** IDs actualmente cacheados — para reconciliar contra la lista de Drive. */
+  getCachedIds(): string[] {
+    return Array.from(cacheIndex.keys())
+  },
+
+  /** Delete the photo file from disk and remove it from the index. */
+  async deletePhoto(id: string): Promise<void> {
+    const photo = cacheIndex.get(id)
+    if (!photo) return
+    try {
+      await Filesystem.deleteFile({ path: photo.localPath, directory: Directory.Data })
+    } catch {
+      // Archivo ya inexistente en disco — igual removemos la entrada del índice
+    }
+    cacheIndex.delete(id)
+    await persistIndex()
+  },
 }

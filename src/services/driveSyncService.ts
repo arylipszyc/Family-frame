@@ -85,12 +85,23 @@ export const driveSyncService = {
           return true
         })
 
+      // Reconciliar: fotos que ya no están en la carpeta de Drive se eliminan
+      // del caché local — sin esto el disco crece sin límite y las fotos
+      // sacadas de la carpeta siguen rotando para siempre.
+      const driveIds = new Set(allFiles.map((f) => f.id))
+      const removedIds = photoCacheService.getCachedIds().filter((id) => !driveIds.has(id))
+      for (const id of removedIds) {
+        await photoCacheService.deletePhoto(id)
+      }
+
       if (newFiles.length > 0) {
         for (const file of newFiles) {
           const blob = await downloadFile(token, file.id)
           await photoCacheService.savePhoto(file.id, blob)
         }
+      }
 
+      if (newFiles.length > 0 || removedIds.length > 0) {
         const allPhotos = await photoCacheService.getAllCachedPhotos()
         contentStore.setPhotos(allPhotos)
       }
