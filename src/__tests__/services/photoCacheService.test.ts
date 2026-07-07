@@ -131,7 +131,7 @@ describe('photoCacheService', () => {
         directory: 'DATA',
       })
       expect(photoCacheService.hasPhoto('doomed')).toBe(false)
-      const lastSet = mockPreferences.set.mock.calls.at(-1)![0]
+      const lastSet = mockPreferences.set.mock.calls[mockPreferences.set.mock.calls.length - 1][0]
       expect(JSON.parse(lastSet.value)).toEqual([])
     })
 
