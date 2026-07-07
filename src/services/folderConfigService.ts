@@ -8,13 +8,18 @@ interface FolderConfigFile {
   folderId: string
 }
 
+// Los folderId de Drive son alfanuméricos con - y _. El formato estricto evita
+// que un config file malicioso/corrupto inyecte términos en la query de Drive
+// (driveSyncService interpola el folderId en el parámetro q).
+const FOLDER_ID_REGEX = /^[A-Za-z0-9_-]+$/
+
 function isValidConfig(parsed: unknown): parsed is FolderConfigFile {
   return (
     typeof parsed === 'object' &&
     parsed !== null &&
     'folderId' in parsed &&
     typeof (parsed as { folderId: unknown }).folderId === 'string' &&
-    (parsed as { folderId: string }).folderId.trim().length > 0
+    FOLDER_ID_REGEX.test((parsed as { folderId: string }).folderId)
   )
 }
 

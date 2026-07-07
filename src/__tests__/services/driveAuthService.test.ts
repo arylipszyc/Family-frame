@@ -66,6 +66,12 @@ describe('driveAuthService.getAccessToken', () => {
     expect(mockFetch).not.toHaveBeenCalled()
   })
 
+  it('throws a clear error when stored SA JSON is corrupted', async () => {
+    mockPreferences.get.mockResolvedValueOnce({ value: '{corrupted-json' })
+    await expect(driveAuthService.getAccessToken()).rejects.toThrow(/corrupted/)
+    expect(mockFetch).not.toHaveBeenCalled()
+  })
+
   it('signs JWT and exchanges it for an access token', async () => {
     mockPreferences.get.mockResolvedValueOnce({ value: validSA })
     mockFetch.mockResolvedValueOnce({

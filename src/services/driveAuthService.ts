@@ -21,8 +21,11 @@ let cachedToken: CachedToken | null = null
 async function loadServiceAccount(): Promise<ServiceAccount> {
   const { value } = await Preferences.get({ key: SA_JSON_KEY })
   if (!value) throw new Error('Service Account not configured')
-  const parsed = JSON.parse(value) as ServiceAccount
-  return parsed
+  try {
+    return JSON.parse(value) as ServiceAccount
+  } catch {
+    throw new Error('Service Account config corrupted — re-import sa-config.json')
+  }
 }
 
 async function mintAccessToken(sa: ServiceAccount): Promise<string> {

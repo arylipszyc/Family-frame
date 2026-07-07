@@ -724,9 +724,10 @@ describe('AdminScreen — Sección Fotos (Drive + SA)', () => {
     })
   })
 
-  it('handleForceSync muestra toast de error cuando sync falla', async () => {
+  it('handleForceSync muestra toast de sin conexión cuando sync falla offline', async () => {
     mockDriveAuth.isAuthenticated.mockResolvedValue(true)
     mockDriveSync.sync.mockRejectedValue(new Error('network error'))
+    useSyncStore.setState({ isOnline: false })
     const { getByTestId } = render(<AdminScreen />)
     await waitFor(() => {
       expect((getByTestId('btn-force-sync') as HTMLButtonElement).disabled).toBe(false)
@@ -734,6 +735,20 @@ describe('AdminScreen — Sección Fotos (Drive + SA)', () => {
     fireEvent.click(getByTestId('btn-force-sync'))
     await waitFor(() => {
       expect(getByTestId('toast').textContent).toContain('Sin conexión — usando caché')
+    })
+  })
+
+  it('handleForceSync muestra toast de error de Drive cuando sync falla online', async () => {
+    mockDriveAuth.isAuthenticated.mockResolvedValue(true)
+    mockDriveSync.sync.mockRejectedValue(new Error('403 forbidden'))
+    useSyncStore.setState({ isOnline: true })
+    const { getByTestId } = render(<AdminScreen />)
+    await waitFor(() => {
+      expect((getByTestId('btn-force-sync') as HTMLButtonElement).disabled).toBe(false)
+    })
+    fireEvent.click(getByTestId('btn-force-sync'))
+    await waitFor(() => {
+      expect(getByTestId('toast').textContent).toContain('revisá la configuración de Drive')
     })
   })
 })

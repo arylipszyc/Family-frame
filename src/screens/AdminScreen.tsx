@@ -237,6 +237,12 @@ export function AdminScreen() {
   // Kiosk mode
   const [kioskEnabled, setKioskEnabled] = useState(true)
 
+  // Limpiar timers pendientes del toast al desmontar — evita setState huérfano
+  useEffect(() => () => {
+    if (toastTimerRef.current)     clearTimeout(toastTimerRef.current)
+    if (toastFadeTimerRef.current) clearTimeout(toastFadeTimerRef.current)
+  }, [])
+
   function showToast(message: string, color: string, duration = 2000) {
     if (toastTimerRef.current)     clearTimeout(toastTimerRef.current)
     if (toastFadeTimerRef.current) clearTimeout(toastFadeTimerRef.current)
@@ -648,7 +654,16 @@ export function AdminScreen() {
         showToast('Sin fotos nuevas', AMBER, 2000)
       }
     } catch {
-      showToast('Sin conexión — usando caché', SEPIA, 4000)
+      // Distinguir problema de red (esperable, el caché sigue funcionando) de un
+      // error de API (SA revocada, folder inválido, quota) que requiere acción.
+      const offline = !useSyncStore.getState().isOnline
+      showToast(
+        offline
+          ? 'Sin conexión — usando caché'
+          : 'Error al sincronizar — revisá la configuración de Drive',
+        SEPIA,
+        4000,
+      )
     } finally {
       setIsSyncing(false)
     }

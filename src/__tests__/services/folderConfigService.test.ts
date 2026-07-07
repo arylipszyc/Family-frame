@@ -59,6 +59,16 @@ describe('folderConfigService.bootstrapFromFile', () => {
     expect(Filesystem.deleteFile).not.toHaveBeenCalled()
   })
 
+  it('no-op when folderId contains characters outside [A-Za-z0-9_-] (query injection guard)', async () => {
+    for (const bad of ["abc' or 'x", 'abc def', 'abc/def', "id'+injection"]) {
+      vi.mocked(Filesystem.readFile).mockResolvedValueOnce({ data: JSON.stringify({ folderId: bad }) })
+      await folderConfigService.bootstrapFromFile()
+    }
+
+    expect(Preferences.set).not.toHaveBeenCalled()
+    expect(Filesystem.deleteFile).not.toHaveBeenCalled()
+  })
+
   it('persists folderId to Preferences and deletes file when valid', async () => {
     vi.mocked(Filesystem.readFile).mockResolvedValueOnce({
       data: JSON.stringify({ folderId: '1nG1xCgiqWfJjXX4ZMHxjOsUGCIhsen32' }),
