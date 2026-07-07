@@ -211,6 +211,28 @@ describe('driveSyncService', () => {
     expect(mockPhotoCache.deletePhoto).toHaveBeenCalledWith('gone')
   })
 
+  it('descarga con un pool concurrente acotado (2..4 en vuelo)', async () => {
+    mockListResponse(Array.from({ length: 10 }, (_, i) => ({ id: `c-${i}` })))
+    let inFlight = 0
+    let maxInFlight = 0
+    // La respuesta del list ya fue consumida (mockResolvedValueOnce); esto solo ve downloads
+    mockFetch.mockImplementation(async () => {
+      inFlight++
+      maxInFlight = Math.max(maxInFlight, inFlight)
+      await new Promise((r) => setTimeout(r, 10))
+      inFlight--
+      return { ok: true, blob: async () => new Blob(['x']) }
+    })
+    mockPhotoCache.getAllCachedPhotos.mockResolvedValueOnce([])
+
+    const count = await driveSyncService.sync()
+
+    expect(count).toBe(10)
+    expect(mockPhotoCache.savePhoto).toHaveBeenCalledTimes(10)
+    expect(maxInFlight).toBeGreaterThan(1)      // efectivamente paralelo
+    expect(maxInFlight).toBeLessThanOrEqual(4)  // pero acotado
+  })
+
   it('sets syncStatus to error and re-throws on list API error', async () => {
     mockFetch.mockResolvedValueOnce({ ok: false, status: 500 })
     const consoleSpy = vi.spyOn(console, 'error').mockImplementation(() => {})

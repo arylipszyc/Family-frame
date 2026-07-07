@@ -8,6 +8,9 @@ const FOLDER_ID_KEY  = 'googleDriveFolderId'
 const DRIVE_API_BASE = 'https://www.googleapis.com/drive/v3'
 // Capacitor bridge serializes file content as base64 JSON to native; ~127MB binary OOMs the JVM (256MB heap).
 const MAX_FILE_BYTES = 20 * 1024 * 1024
+// Pool acotado: acelera el sync inicial ~4x manteniendo a lo sumo 4 blobs
+// (max 80MB) en memoria a la vez.
+const CONCURRENT_DOWNLOADS = 4
 
 interface DriveFile {
   id:           string
@@ -95,10 +98,23 @@ export const driveSyncService = {
       }
 
       if (newFiles.length > 0) {
-        for (const file of newFiles) {
-          const blob = await downloadFile(token, file.id)
-          await photoCacheService.savePhoto(file.id, blob)
+        let nextIdx = 0
+        let failed = false
+        const downloadWorker = async (): Promise<void> => {
+          while (!failed && nextIdx < newFiles.length) {
+            const file = newFiles[nextIdx++]
+            try {
+              const blob = await downloadFile(token, file.id)
+              await photoCacheService.savePhoto(file.id, blob)
+            } catch (err) {
+              failed = true  // frena los demás workers en su próxima iteración
+              throw err
+            }
+          }
         }
+        await Promise.all(
+          Array.from({ length: Math.min(CONCURRENT_DOWNLOADS, newFiles.length) }, downloadWorker)
+        )
       }
 
       if (newFiles.length > 0 || removedIds.length > 0) {
