@@ -1,21 +1,10 @@
 import { Filesystem, Directory } from '@capacitor/filesystem'
 import { Preferences } from '@capacitor/preferences'
 import type { WelcomeConfig } from '../stores/contentStore'
+import { blobToBase64 } from '../utils/blobToBase64'
 
 const WELCOME_CONFIG_KEY = 'welcomeConfig'
 const WELCOME_PHOTO_PATH  = 'welcome/photo.jpg'
-
-async function blobToBase64(blob: Blob): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader()
-    reader.onloadend = () => {
-      const result = reader.result
-      if (typeof result === 'string') resolve(result.split(',')[1])  // strip data:...;base64, prefix
-    }
-    reader.onerror = reject
-    reader.readAsDataURL(blob)
-  })
-}
 
 export const storageService = {
   async saveWelcomeConfig(config: WelcomeConfig): Promise<void> {

@@ -2,7 +2,6 @@ import { useState, useRef, useCallback, useEffect } from 'react'
 import type { CSSProperties } from 'react'
 import { useContentStore } from '../stores/contentStore'
 import { useDisplayStore } from '../stores/displayStore'
-import { useAdminStore } from '../stores/adminStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useInterval } from '../hooks/useInterval'
 import { PhotoSlide } from '../components/PhotoSlide'
@@ -88,7 +87,6 @@ export function KioskScreen() {
   const yiddishPhrases = useContentStore((state) => state.yiddishPhrases)
   const birthdays = useContentStore((state) => state.birthdays)
   const setMode = useDisplayStore((state) => state.setMode)
-  const setAuthenticated = useAdminStore((state) => state.setAuthenticated)
   const photoRotationInterval = useSettingsStore((s) => s.photoRotationInterval)
 
   const [shiftX, setShiftX] = useState(0)
@@ -109,13 +107,9 @@ export function KioskScreen() {
     setShiftY(randomShift())
   }, PIXEL_SHIFT_INTERVAL_MS)
 
-  const handleGestureDetected = useCallback(async () => {
-    try {
-      pinAttemptsRef.current = 0
-      setShowPin(true)
-    } catch {
-      // fallo silencioso — preferencias no disponibles
-    }
+  const handleGestureDetected = useCallback(() => {
+    pinAttemptsRef.current = 0
+    setShowPin(true)
   }, [])
 
   const handlePinComplete = useCallback(async (pin: string) => {
@@ -125,7 +119,6 @@ export function KioskScreen() {
       if (correct) {
         setShowPin(false)
         setTimeout(() => {
-          setAuthenticated(true)
           setMode('admin')
         }, 500)
         return
@@ -146,7 +139,7 @@ export function KioskScreen() {
     } catch {
       setShowPin(false)
     }
-  }, [setAuthenticated, setMode])
+  }, [setMode])
 
   return (
     <div style={{ ...rootContainerStyle, transform: `translate(${shiftX}px, ${shiftY}px)` }}>

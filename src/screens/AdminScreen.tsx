@@ -2,7 +2,6 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import type { CSSProperties } from 'react'
 import { useContentStore } from '../stores/contentStore'
 import { useDisplayStore } from '../stores/displayStore'
-import { useAdminStore } from '../stores/adminStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { adminContentService } from '../services/adminContentService'
 import { systemSettingsService } from '../services/systemSettingsService'
@@ -173,7 +172,6 @@ export function AdminScreen() {
   const setBirthdays       = useContentStore((s) => s.setBirthdays)
   const setWelcomeConfig   = useContentStore((s) => s.setWelcomeConfig)
   const setMode            = useDisplayStore((s) => s.setMode)
-  const setAuthenticated   = useAdminStore((s) => s.setAuthenticated)
   const photoRotationInterval  = useSettingsStore((s) => s.photoRotationInterval)
   const setPhotoRotationInterval = useSettingsStore((s) => s.setPhotoRotationInterval)
   const nightModeStart     = useSettingsStore((s) => s.nightModeStart)
@@ -260,7 +258,6 @@ export function AdminScreen() {
     if (exiting) return  // P2: guard contra double-fire
     setExiting(true)
     setTimeout(() => {
-      setAuthenticated(false)
       setMode('kiosk')
     }, 2000)
   }

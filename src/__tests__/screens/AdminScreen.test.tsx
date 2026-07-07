@@ -53,7 +53,6 @@ vi.mock('@capgo/capacitor-android-kiosk',       () => ({ CapacitorAndroidKiosk: 
 
 import { AdminScreen } from '../../screens/AdminScreen'
 import { useContentStore  } from '../../stores/contentStore'
-import { useAdminStore    } from '../../stores/adminStore'
 import { useDisplayStore  } from '../../stores/displayStore'
 import { useSettingsStore } from '../../stores/settingsStore'
 import { useSyncStore     } from '../../stores/syncStore'
@@ -69,8 +68,7 @@ beforeEach(() => {
     birthdays: [{ id: 'b-1', name: 'Abel', date: '1948-03-15', calendar: 'gregorian' }],
     welcomeConfig: { photoPath: '', message: 'Mensaje actual', authorName: 'Tus hijos' },
   })
-  useAdminStore.setState({ isAuthenticated: true })
-  useDisplayStore.setState({ mode: 'admin', currentPhotoIndex: 0 })
+  useDisplayStore.setState({ mode: 'admin' })
   useSettingsStore.setState({ photoRotationInterval: 30_000, nightModeStart: '22:00', nightModeEnd: '07:00' })
   useSyncStore.setState({ syncStatus: 'idle', lastSync: null, isOnline: false })
   // Default: SA no configurado
@@ -102,14 +100,13 @@ describe('AdminScreen — estructura', () => {
 })
 
 describe('AdminScreen — navegación de regreso', () => {
-  it('llama setAuthenticated(false) y setMode(kiosk) al volver', async () => {
+  it('llama setMode(kiosk) al volver', async () => {
     vi.useFakeTimers()
     const { getByTestId } = render(<AdminScreen />)
 
     fireEvent.click(getByTestId('btn-back'))
     vi.advanceTimersByTime(2000)
 
-    expect(useAdminStore.getState().isAuthenticated).toBe(false)
     expect(useDisplayStore.getState().mode).toBe('kiosk')
     vi.useRealTimers()
   })
