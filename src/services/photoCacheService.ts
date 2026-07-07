@@ -67,21 +67,22 @@ export const photoCacheService = {
   /**
    * Return all photos whose file actually exists on disk.
    * localPath is replaced with the platform URI for use as img src.
+   * Las llamadas al bridge (stat/getUri) van en paralelo — en serie eran
+   * 2×N roundtrips en el critical path del boot.
    */
   async getAllCachedPhotos(): Promise<Photo[]> {
-    const valid: Photo[] = []
-
-    for (const photo of cacheIndex.values()) {
-      try {
-        await Filesystem.stat({ path: photo.localPath, directory: Directory.Data })
-        const { uri } = await Filesystem.getUri({ path: photo.localPath, directory: Directory.Data })
-        valid.push({ ...photo, localPath: uri })
-      } catch {
-        // File missing — skip without error
-      }
-    }
-
-    return valid
+    const resolved = await Promise.all(
+      Array.from(cacheIndex.values()).map(async (photo) => {
+        try {
+          await Filesystem.stat({ path: photo.localPath, directory: Directory.Data })
+          const { uri } = await Filesystem.getUri({ path: photo.localPath, directory: Directory.Data })
+          return { ...photo, localPath: uri }
+        } catch {
+          return null  // File missing — skip without error
+        }
+      })
+    )
+    return resolved.filter((p): p is Photo => p !== null)
   },
 
   /** Check membership in the in-memory index only — no filesystem access. */
