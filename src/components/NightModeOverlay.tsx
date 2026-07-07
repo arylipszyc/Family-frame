@@ -1,27 +1,29 @@
 import { useState, useEffect } from 'react'
+import { useSettingsStore } from '../stores/settingsStore'
 
-const NIGHT_START_HOUR = 22
-const NIGHT_END_HOUR = 7
+// Fallbacks si el valor persistido está malformado (evita NaN → timer loop)
+const DEFAULT_START_MIN = 22 * 60
+const DEFAULT_END_MIN   = 7 * 60
 
-function isNightTime(date: Date): boolean {
-  const h = date.getHours()
-  return h >= NIGHT_START_HOUR || h < NIGHT_END_HOUR
+function toMinutes(hhmm: string, fallback: number): number {
+  const m = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(hhmm)
+  if (!m) return fallback
+  return Number(m[1]) * 60 + Number(m[2])
 }
 
-function msUntilNextThreshold(now: Date): number {
-  const h = now.getHours()
-  const target = new Date(now)
+function isNightTime(date: Date, startMin: number, endMin: number): boolean {
+  const cur = date.getHours() * 60 + date.getMinutes()
+  if (startMin === endMin) return false
+  return startMin > endMin
+    ? cur >= startMin || cur < endMin   // rango que cruza medianoche (ej. 22:00–07:00)
+    : cur >= startMin && cur < endMin   // rango dentro del mismo día
+}
 
-  if (h >= NIGHT_START_HOUR || h < NIGHT_END_HOUR) {
-    // De noche → próximo umbral: 07:00
-    if (h >= NIGHT_START_HOUR) {
-      target.setDate(target.getDate() + 1)
-    }
-    target.setHours(NIGHT_END_HOUR, 0, 0, 0)
-  } else {
-    // De día → próximo umbral: 22:00
-    target.setHours(NIGHT_START_HOUR, 0, 0, 0)
-  }
+function msUntilNextThreshold(now: Date, startMin: number, endMin: number): number {
+  const targetMin = isNightTime(now, startMin, endMin) ? endMin : startMin
+  const target = new Date(now)
+  target.setHours(Math.floor(targetMin / 60), targetMin % 60, 0, 0)
+  if (target.getTime() <= now.getTime()) target.setDate(target.getDate() + 1)
 
   // Floor en 1ms: evita delay negativo si el reloj fue ajustado (NTP, DST, suspensión)
   return Math.max(1, target.getTime() - now.getTime())
@@ -44,12 +46,24 @@ async function trySetBrightness(value: number): Promise<void> {
 }
 
 export function NightModeOverlay() {
-  const [isNight, setIsNight] = useState(() => isNightTime(new Date()))
+  const nightModeStart = useSettingsStore((s) => s.nightModeStart)
+  const nightModeEnd   = useSettingsStore((s) => s.nightModeEnd)
+
+  const [isNight, setIsNight] = useState(() => isNightTime(
+    new Date(),
+    toMinutes(nightModeStart, DEFAULT_START_MIN),
+    toMinutes(nightModeEnd, DEFAULT_END_MIN),
+  ))
   const [animate, setAnimate] = useState(false)
 
   useEffect(() => {
-    // Brillo inicial sin animación
-    void trySetBrightness(isNightTime(new Date()) ? 0.15 : 1.0)
+    const startMin = toMinutes(nightModeStart, DEFAULT_START_MIN)
+    const endMin   = toMinutes(nightModeEnd, DEFAULT_END_MIN)
+
+    // Estado + brillo inmediatos al montar o al cambiar la config desde el admin
+    const night = isNightTime(new Date(), startMin, endMin)
+    setIsNight(night)
+    void trySetBrightness(night ? 0.15 : 1.0)
 
     // Habilitar transición CSS después del primer render (AC3: sin animación al montar)
     const enableTimer = setTimeout(() => setAnimate(true), 100)
@@ -58,11 +72,11 @@ export function NightModeOverlay() {
 
     function scheduleNext() {
       timeout = setTimeout(() => {
-        const night = isNightTime(new Date())
-        setIsNight(night)
-        void trySetBrightness(night ? 0.15 : 1.0)
+        const n = isNightTime(new Date(), startMin, endMin)
+        setIsNight(n)
+        void trySetBrightness(n ? 0.15 : 1.0)
         scheduleNext()
-      }, msUntilNextThreshold(new Date()))
+      }, msUntilNextThreshold(new Date(), startMin, endMin))
     }
 
     scheduleNext()
@@ -71,10 +85,11 @@ export function NightModeOverlay() {
       clearTimeout(enableTimer)
       clearTimeout(timeout)
     }
-  }, [])
+  }, [nightModeStart, nightModeEnd])
 
   return (
     <div
+      data-testid="night-mode-overlay"
       style={{
         position: 'fixed',
         top: 0,
